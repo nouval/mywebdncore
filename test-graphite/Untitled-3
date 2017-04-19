@@ -1,0 +1,51 @@
+OCRCOnfirmationModal
+
+C:\Users\nhussein\AppData\Local\Temp\temp.jpg
+
+USE [fxDB6_Logs]
+GO
+
+/****** Object:  StoredProcedure [dbo].[sp_tracker_event_insert]    Script Date: 8/5/2016 3:33:19 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+/*
+:Description: 
+	Used to store triggered events into systblApp_Event_Log table
+:Database Target: 
+	fxDb6_Ops
+:Revision History:
+	07/16/2013 PJ SCR # 1821411 - created 
+:Example Query:              
+	EXEC [sp_tracker_event_insert] 
+	 @fEventID = 111,      
+	 @fSessionID = 3423434,      
+	 @fTime = '2013-7-31 11:30:00'      
+*/
+
+CREATE PROCEDURE [dbo].[sp_tracker_event_insert]
+(
+    @fEventID INT,
+    @fSessionID INT = NULL,
+    @fTime datetime = NULL
+)
+AS
+BEGIN
+SET NOCOUNT ON
+
+	Declare @fLogID bigint
+	EXEC fxDB6ServerInfo.dbo.an_sp_GetNextAutoID_OneItem 500, 0, 10710, @fLogID OUTPUT
+	
+	Insert Into systblApp_Event_Log (fLogID, fEventID, fSessionID, fAppID, fTime, fChanged, fDelete)
+	Values (@fLogID,@fEventID,@fSessionID,500, isnull(@fTime,GETDATE()),1,0)
+	
+	
+END
+
+
+GO
+

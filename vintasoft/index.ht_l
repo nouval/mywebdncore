@@ -1,0 +1,121 @@
+<html>
+    <head>
+        <title>VintaSoft Web TWAIN ActiveX Demo</title>
+        <script language="JavaScript" type="text/javascript">
+
+            function isTwainAvailable() {
+                return (VSTwain1.IsTwainAvailable == null) ? false : true;
+            }
+
+            function loadSource() {
+                if (!isTwainAvailable()) {
+                    alert("Twain Driver is not available, please install driver!");
+                    return;
+                }
+
+                if (VSTwain1.SourcesCount > 0) {
+                    var objSel = document.getElementById("sourceId");
+                    for (var i = 0; i < VSTwain1.SourcesCount; i++) {
+                        objSel.options.length = objSel.options.length + 1;
+                        objSel.options[i].text = VSTwain1.GetSourceProductName(i);
+                        objSel.options[i].value = i;
+                    }
+                }
+            }
+
+            function configureScanner() {
+                if (!isTwainAvailable()) {
+                    alert("Twain Driver is not available, please install driver!");
+                    return;
+                }
+                
+                VSTwain1.StartDevice();
+
+                VSTwain1.Register("Euronet Payment Services", "riaenvia.net", "55F9E48995823F3B65DAA5B9DEE9293BDCCBD5D540BF77C3FF5DFD6CB5AFF8524E9DD46994B84894CAA1F9C684C4EAF8C07BA03C7BD5E99E83A92A0E74E8515C523878AAF4A8BE1558D3A02AA91E9BB5FDC76AD0F406B8DBB26BD7E6BF9DAE57C5B3D4257D376778A9D1B33B342CC930EB73FD3332F1A691DD1426E283757D315A9445F3DF197C0367918DA5703BC3F5AD58E7B1A961EE9B597D4566CC9AB9BB")
+
+                VSTwain1.MaxImages = 1;
+                VSTwain1.AutoCleanBuffer = 1;
+
+                // selecting device
+                var objSel = document.getElementById("sourceId");
+                if (objSel.options[objSel.selectedIndex].value == "") {
+                    // manual select
+                    VSTwain1.SelectSource();
+                } else {
+                    // auto select
+                    var deviceValueSelected = objSel.options[objSel.selectedIndex].value;
+                    VSTwain1.SourceIndex = deviceValueSelected;
+                }
+
+                VSTwain1.ShowUI = 1;    // set this to 1/true resulting Twain UI Driver to pop
+                VSTwain1.OpenDataSource();
+                VSTwain1.unitOfMeasure = 0;
+                VSTwain1.PixelType = 2; // 2 or 1;
+                VSTwain1.resolution = 300;
+                while(VSTwain1.AcquireModal()){
+                    // 
+                };
+                VSTwain1.StopDevice();
+            }
+
+            function scanImage() {
+                if (!isTwainAvailable()) {
+                    alert("Twain Driver is not available, please install driver!");
+                    return;
+                }
+
+                VSTwain1.StartDevice();
+                var setLicenseStatus = VSTwain1.Register("Euronet Payment Services", "riaenvia.net", "55F9E48995823F3B65DAA5B9DEE9293BDCCBD5D540BF77C3FF5DFD6CB5AFF8524E9DD46994B84894CAA1F9C684C4EAF8C07BA03C7BD5E99E83A92A0E74E8515C523878AAF4A8BE1558D3A02AA91E9BB5FDC76AD0F406B8DBB26BD7E6BF9DAE57C5B3D4257D376778A9D1B33B342CC930EB73FD3332F1A691DD1426E283757D315A9445F3DF197C0367918DA5703BC3F5AD58E7B1A961EE9B597D4566CC9AB9BB");
+                console.log("value of setLicenseStatus: ", setLicenseStatus);
+                VSTwain1.MaxImages = 1;
+
+                VSTwain1.AutoCleanBuffer = 1;
+                VSTwain1.DisableAfterAcquire = 1;
+
+                // selecting device
+                var objSel = document.getElementById("sourceId");
+                if (objSel.options[objSel.selectedIndex].value == "") {
+                    // manual select
+                    var selectedSource = VSTwain1.SelectSource();
+                    console.log("value of selectedSource: ", selectedSource);
+                } else {
+                    // auto select
+                    var deviceValueSelected = objSel.options[objSel.selectedIndex].value;
+                    VSTwain1.SourceIndex = deviceValueSelected;
+                }
+                
+                VSTwain1.ShowUI = 0;
+                VSTwain1.OpenDataSource();
+                VSTwain1.unitOfMeasure = 0;
+                VSTwain1.PixelType = 2; // 2 or 1;
+                VSTwain1.resolution = 300;
+
+                while(VSTwain1.AcquireModal()){
+                    // 
+                };
+                console.log("number Of Images: ", VSTwain1.NumImages);
+                var imgPathSet = VSTwain1.GetPathToTempDir() + "temp.jpg";
+                console.log("image will be save at: ", imgPathSet);
+                if (VSTwain1.SaveImage(0, imgPathSet) == 0) {
+                    console.log("error saving image: " , VSTwain1.errorString);
+                    alert(VSTwain1.errorString);
+                } else {
+                    console.log("image is saved");
+                }
+                VSTwain1.StopDevice();
+            }
+        </script>
+    </head>
+    <body onload="loadSource()">
+        <p><b>Sample Html + JavaScript: Scan image with VintaSoft ActiveX</b>
+        <object id="VSTwain1" width="1" height="1" classid="CLSID:1169E0CD-9E76-11D7-B1D8-FB63945DE96D" codebase=""></object></p>
+        <p>Select Source: 
+        <select id="sourceId" name="sourceId">
+            <option value="">Manual</option>
+        </select></p>
+        <button id="scanBtn" name="scanBtn" onclick="scanImage()" >Scan Image</button>
+        <button id="configureBtn" name="configureBtn" onclick="configureScanner()">Configure</button>
+        <br/>
+        <p><img id="scannedImage" name="scannedImage" alt="none"/></p>
+    </body>
+</html>

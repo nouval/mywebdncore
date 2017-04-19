@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Saved Credit Cards - PayPal Payments Pro (UK)</id>
+	<version>1.5.x</version>
+	<vqmver>2.3.x</vqmver>
+	<author>robertmullaney.com</author>
+	
+	<!-- CONTROLLERS -->
+	
+    <file name="catalog/controller/payment/pp_pro.php">
+        <operation error="abort">
+            <search position="before"><![CDATA[
+                $this->load->model('checkout/order');
+            ]]></search>
+            <add><![CDATA[
+				if (isset($this->request->post['payment_card']) && $this->request->post['payment_card'] == 'existing' && isset($this->request->post['card_id'])) {
+					$this->load->model('account/cards');
+					$card_data = $this->model_account_cards->getCard($this->request->post['card_id']);
+					if (isset($card_data['card_id'])) {
+						unset($this->request->post['save_card']);
+						$this->request->post['cc_owner'] = $card_data['owner'];
+						$this->request->post['cc_number'] = $card_data['number'];
+						$this->request->post['cc_expire_date_month'] = $card_data['month'];
+						$this->request->post['cc_expire_date_year'] = $card_data['year'];
+						if (isset($this->request->post['card_existing_cvv2'])) {
+							$this->request->post['cc_cvv2'] = $this->request->post['card_existing_cvv2'];
+						} elseif (!empty($card_data['cvv'])) {
+							$this->request->post['cc_cvv2'] = $card_data['cvv'];
+						} else {
+							$this->request->post['cc_cvv2'] = '';
+						}
+					}
+				}
+            ]]></add>
+        </operation>
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $json['success']
+            ]]></search>
+            <add><![CDATA[
+				if (!empty($this->request->post['save_card'])) {
+					$this->session->data['save_card'] = $this->encryption->encrypt(serialize(array(
+						'owner'		=> $this->request->post['cc_owner'],
+						'number'	=> preg_replace('/\D/', '', $this->request->post['cc_number']),
+						'month'		=> $this->request->post['cc_expire_date_month'],
+						'year'		=> $this->request->post['cc_expire_date_year'],
+					)));
+				}
+            ]]></add>
+        </operation>
+    </file>
+
+</modification>

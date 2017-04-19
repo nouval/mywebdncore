@@ -1,0 +1,9 @@
+Find all "ServiceChannel.Return<", Subfolders, Find Results 1, Entire Solution, "*.cs"
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Bll\Accounting\AccountingQuery.cs(30):			return ServiceChannel.Return<IAccountingService, ARBalanceCheckInfo>(service => service.CheckARBalance(agentId));
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Bll\Accounting\AccountingQuery.cs(35):			return ServiceChannel.Return<IAccountingService, PeriodBalance1Info>(service => service.GetPeriodPrecedingDate(filterDate));
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Infrastructure\Help\Documents\DocumentRepository.cs(25):			return ServiceChannel.Return<IDocumentService, List<DocumentFilesInfo>>(service => service.Get5LatestAgentDocuments(agentId, isForRecentDocs, locale));
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Infrastructure\Help\Documents\DocumentRepository.cs(30):			return ServiceChannel.Return<IDocumentService, DocumentFilesInfo>(service => service.GetDocumentFile(fileId));
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Infrastructure\Help\Documents\DocumentRepository.cs(35):			return ServiceChannel.Return<IDocumentService, List<DocumentFilesInfo>>(service => service.SearchAgentDocumentsWithCategoryLanguage(agentId, searchKey, category, language, false, options));
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Infrastructure\Help\Documents\DocumentRepository.cs(40):			return ServiceChannel.Return<IDocumentService, List<DocumentLanguageInfo>>(service => service.GetAllDocumentLanguages());
+  C:\Users\nhussein\Source\Repos\FxOnline\Web\FxHub\FxHub.Infrastructure\Help\Documents\DocumentRepository.cs(45):			return ServiceChannel.Return<IDocumentService, List<DocumentCategoryInfo>>(service => service.GetAllDocumentCategories());
+  Matching lines: 7    Matching files: 2    Total files searched: 396

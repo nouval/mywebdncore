@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<id>Saved Credit Cards</id>
+	<version>1.5.x</version>
+	<vqmver>2.3.x</vqmver>
+	<author>robertmullaney.com</author>
+	
+	<!-- LANGUAGES -->
+	
+    <file name="catalog/language/*/account/account.php">
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $_['text_address']
+            ]]></search>
+            <add><![CDATA[
+				$_['text_cards'] = 'Modify your saved credit cards';
+            ]]></add>
+        </operation>
+    </file>
+	
+    <file name="catalog/language/*/module/account.php">
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $_['text_address']
+            ]]></search>
+            <add><![CDATA[
+				$_['text_cards'] = 'Saved Credit Cards';
+            ]]></add>
+        </operation>
+    </file>
+	
+	<!-- TEMPLATES -->
+	
+	<file path="catalog/view/theme/*/template/" name="account/account.tpl,module/account.tpl">
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                <?php echo $address; ?>
+            ]]></search>
+            <add><![CDATA[
+				<?php if ($this->config->get('saved_cards_status')) { ?>
+				<li><a href="<?php echo $cards; ?>"><?php echo $text_cards; ?></a></li>
+				<?php } ?>
+            ]]></add>
+        </operation>
+    </file>
+
+	<file path="catalog/view/theme/*/template/checkout/confirm.tpl">
+        <operation error="abort">
+            <search position="replace"><![CDATA[
+                <div class="payment">
+            ]]></search>
+            <add><![CDATA[
+				<div class="payment">
+				<?php if ($this->config->get('saved_cards_status')) { ?>
+				<script type="text/javascript">
+				<!--
+				$(document).ready(function() {
+					if ($('#payment input[name=\'cc_number\']').length) {
+						$('#payment table tr:last').after('<tr><td>&nbsp;</td><td>\
+							<input type="checkbox" name="save_card" value="1" id="save-card" />\
+							<label for="save-card"><?php echo $text_card_save; ?></label>\
+						</td></tr>');
+					}
+				});
+				//-->
+				</script>
+				<?php } ?>
+				<?php if ($this->config->get('saved_cards_status') && $cards) { ?>
+				<div id="payment-saved-cards" style="display: none;">
+					<input type="radio" name="payment_card" value="existing" id="payment-card-existing" checked="checked" />
+					<label for="payment-card-existing"><?php echo $text_card_existing; ?></label>
+					<div id="card-existing">
+						<select name="card_id" style="width: 100%; margin-bottom: 15px;" size="5">
+							<?php foreach ($cards as $card) { ?>
+							<option value="<?php echo $card['card_id']; ?>"><?php echo $card['owner']; ?>, <?php echo $card['masked']; ?></option>
+							<?php } ?>
+						</select>
+						<p><label for="payment-card-existing-cvv"><?php echo $text_card_existing_cvv; ?></label>
+						<input type="text" name="card_existing_cvv2" id="payment-card-existing-cvv"></p>
+					</div>
+					<p><input type="radio" name="payment_card" value="new" id="payment-card-new" />
+					<label for="payment-card-new"><?php echo $text_card_new; ?></label></p>
+				</div>
+				<script type="text/javascript">
+				<!--
+				$(document).ready(function() {
+					if ($('#payment input[name=\'cc_number\']').length) {
+						$('#payment-card-existing').before($('#confirm .payment > h2'));
+						$('#card-existing select option:first-child').prop('selected', true);
+						$('#payment').hide();
+						$('#payment-saved-cards').show();
+					}
+				});
+				$('#confirm input[name=\'payment_card\']').live('change', function() {
+					if (this.value == 'new') {
+						$('#card-existing').hide();
+						$('#payment').show();
+						$('#payment :input')[0].focus();
+					} else {
+						$('#payment').hide();
+						$('#card-existing').show();
+						$('#card-existing :input')[0].focus();
+					}
+				});
+				//-->
+				</script>
+				<?php } ?>
+            ]]></add>
+        </operation>
+    </file>
+
+	<!-- CONTROLLERS -->
+
+	<file path="catalog/controller/" name="account/account.php,module/account.php">
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $this->data['text_address']
+            ]]></search>
+            <add><![CDATA[
+				if ($this->config->get('saved_cards_status')) {
+    				$this->data['text_cards'] = $this->language->get('text_cards');
+				}
+            ]]></add>
+        </operation>
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $this->data['address']
+            ]]></search>
+            <add><![CDATA[
+				if ($this->config->get('saved_cards_status')) {
+	    			$this->data['cards'] = $this->url->link('account/saved_cards', '', 'SSL');
+				}
+            ]]></add>
+        </operation>
+    </file>
+
+	<file path="catalog/controller/checkout/confirm.php">
+        <operation error="abort">
+            <search position="before"><![CDATA[
+                $this->data['payment']
+            ]]></search>
+            <add><![CDATA[
+				$this->language->load('account/saved_cards');
+				$this->data['text_card_existing'] = $this->language->get('text_card_existing');
+				$this->data['text_card_new'] = $this->language->get('text_card_new');
+				$this->data['text_card_save'] = $this->language->get('text_card_save');
+				$this->data['text_card_existing_cvv'] = $this->language->get('entry_cvv');
+				$this->load->model('account/saved_cards');
+				$this->data['cards'] = $this->model_account_saved_cards->getCards();
+				$this->data['taxes'] = $taxes;
+            ]]></add>
+        </operation>
+    </file>
+
+	<file path="catalog/controller/checkout/success.php">
+        <operation error="abort">
+            <search position="before"><![CDATA[
+                $this->cart->clear();
+            ]]></search>
+            <add><![CDATA[
+				if (isset($this->session->data['save_card'])) {
+					$this->load->model('account/saved_cards');
+					$this->model_account_saved_cards->addCard(unserialize($this->encryption->decrypt($this->session->data['save_card'])));
+					unset($this->session->data['save_card']);
+				}
+            ]]></add>
+        </operation>
+    </file>
+
+	<!-- MODELS -->
+	
+	<file path="catalog/model/checkout/order.php">
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                if ($order_query->num_rows) {
+            ]]></search>
+            <add><![CDATA[
+				$taxes = 0;
+				$tax_query = $this->db->query("SELECT SUM(`value`) AS `taxes` FROM `" . DB_PREFIX . "order_total` WHERE code = 'tax' AND `order_id` = '" . (int)$order_id . "'");
+				if ($tax_query->num_rows) {
+					$taxes = $tax_query->row['taxes'];
+				}
+            ]]></add>
+        </operation>
+        <operation error="abort">
+            <search position="after"><![CDATA[
+                $order_query->row['total']
+            ]]></search>
+            <add><![CDATA[
+				'taxes' => $taxes,
+            ]]></add>
+        </operation>
+    </file>
+
+</modification>

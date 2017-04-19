@@ -1,0 +1,8 @@
+/Users/nouval/Development/source/myWebAppNew/bin/Debug/netcoreapp1.1/myWebAppNew.deps.json
+/Users/nouval/Development/source/myWebAppNew/bin/Debug/netcoreapp1.1/myWebAppNew.runtimeconfig.json
+/Users/nouval/Development/source/myWebAppNew/bin/Debug/netcoreapp1.1/myWebAppNew.runtimeconfig.dev.json
+/Users/nouval/Development/source/myWebAppNew/bin/Debug/netcoreapp1.1/myWebAppNew.dll
+/Users/nouval/Development/source/myWebAppNew/bin/Debug/netcoreapp1.1/myWebAppNew.pdb
+/Users/nouval/Development/source/myWebAppNew/obj/Debug/netcoreapp1.1/myWebAppNew.AssemblyInfo.cs
+/Users/nouval/Development/source/myWebAppNew/obj/Debug/netcoreapp1.1/myWebAppNew.dll
+/Users/nouval/Development/source/myWebAppNew/obj/Debug/netcoreapp1.1/myWebAppNew.pdb

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>EMAIL PROMOTION TEMPLATE FOR OPENCART</id>
+	<version>1.4.x and above</version>
+	<vqmver required="true">2.*</vqmver>
+	<author>Sanbotech.com</author>
+	
+	<file path="admin/controller/common/" name="header.php">
+		<operation error="skip">
+			<search position="after"><![CDATA[$this->data['logged'] = sprintf($this->language->get('text_logged'), $this->user->getUserName());]]></search>
+			<add><![CDATA[
+			        $this->load->model('setting/extension');
+					$this->language->load('module/email_promotion_template');
+                    $extensions = $this->model_setting_extension->getInstalled('module');
+                    if (in_array('email_promotion_template', $extensions)) {
+                        $this->data['email_promotion_template'] = $this->url->link('module/email_promotion_template', 'token=' . $this->session->data['token'], 'SSL');
+                        $this->session->data['email_promotion_template_redirect'] = isset($this->request->get['route']) ? $this->request->get['route'] : null;
+						$this->data['text_manage_template'] = $this->language->get('text_manage_template');
+						$this->data['text_email_template'] = $this->language->get('text_email_template');
+						$this->data['text_manage_template_url'] = $this->url->link('module/email_promotion_template/manage', 'token=' . $this->session->data['token'], 'SSL');
+						$this->data['text_manage_sendmail_history'] =$this->language->get('text_manage_sendmail_histroy');
+						$this->data['text_manage_sendmail_history_url'] = $this->url->link('module/email_promotion_template/history', 'token=' . $this->session->data['token'], 'SSL');
+                    } else {
+                       	$this->data['text_manage_template'] = '';
+						$this->data['text_email_template'] = '';
+						$this->data['text_manage_template_url'] = '';
+						$this->data['text_manage_sendmail_history'] ='';
+						$this->data['text_manage_sendmail_history_url'] = '';
+                    }
+            ]]></add>
+		</operation>
+	</file>
+	<file path="admin/view/template/common/" name="header.tpl">
+		<operation error="skip" info="Add Header Link">
+			<search position="after" offset="0"><![CDATA[<li id="dashboard"><a href="<?php echo $home; ?>" class="top"><?php echo $text_dashboard; ?></a></li>]]></search>
+			<add><![CDATA[
+                <?php if ($this->data['text_manage_template']): ?>
+                <li id="email-promotion-template-module">
+                    <a href="<?php echo $email_promotion_template; ?>" class="top"><?php echo$text_email_template;?></a>
+                    <ul>
+                        <li><a href="<?php echo $text_manage_template_url; ?>"><?php echo $text_manage_template; ?></a></li>
+						<li><a href="<?php echo $text_manage_sendmail_history_url; ?>"><?php echo $text_manage_sendmail_history;?></a></li>
+                    </ul>
+                </li>
+                <?php endif; ?>
+            ]]></add>
+		</operation>
+		
+	</file>
+	
+
+</modification>

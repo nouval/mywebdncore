@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>MVC with Angular & ui-route</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script> 
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.3.0/angular-ui-router.min.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/home-controller.js"></script>
+  <script src="js/contact-controller.js"></script>
+  <script src="js/contacts-controller.js"></script>
+</head>
+<body ng-app="contact">
+
+<div class="container">
+  <div class="jumbotron">
+    <h1>MVC with Angular & ui-route</h1>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut tincidunt elementum odio, nec pharetra dui pharetra at. Praesent fermentum feugiat.</p> 
+  </div>
+  <div class="row">
+
+    <div ui-view="sidebar"></div>
+    <div ui-view="content"></div>
+
+  </div>
+</div>
+
+</body>
+</html>

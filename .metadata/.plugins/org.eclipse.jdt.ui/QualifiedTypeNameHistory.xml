@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="com.journalpublication.model.Journal"/>
+<fullyQualifiedTypeName name="com.journalpublication.ApplicationEventListener"/>
+<fullyQualifiedTypeName name="com.journalpublication.ApplicationListener"/>
+<fullyQualifiedTypeName name="java.io.File"/>
+<fullyQualifiedTypeName name="java.awt.Desktop"/>
+<fullyQualifiedTypeName name="org.springframework.web.bind.annotation.PathVariable"/>
+<fullyQualifiedTypeName name="com.journalpublication.model.JournalContent"/>
+<fullyQualifiedTypeName name="java.io.FileOutputStream"/>
+<fullyQualifiedTypeName name="com.itextpdf.text.pdf.PdfReader"/>
+<fullyQualifiedTypeName name="com.itextpdf.text.pdf.PdfStamper"/>
+<fullyQualifiedTypeName name="com.itextpdf.text.pdf.PdfWriter"/>
+<fullyQualifiedTypeName name="com.itextpdf.text.DocumentException"/>
+<fullyQualifiedTypeName name="chrriis.dj.nativeswing.swtimpl.NativeInterface"/>
+<fullyQualifiedTypeName name="javax.swing.JPanel"/>
+<fullyQualifiedTypeName name="chrriis.dj.nativeswing.swtimpl.components.JWebBrowser"/>
+<fullyQualifiedTypeName name="java.io.FileInputStream"/>
+<fullyQualifiedTypeName name="java.io.DataInputStream"/>
+<fullyQualifiedTypeName name="com.journalpublication.CryptoUtils"/>
+<fullyQualifiedTypeName name="java.awt.image.BufferedImage"/>
+<fullyQualifiedTypeName name="com.journalpublication.PDFViewer"/>
+<fullyQualifiedTypeName name="java.io.ByteArrayOutputStream"/>
+<fullyQualifiedTypeName name="javax.imageio.ImageIO"/>
+<fullyQualifiedTypeName name="javax.swing.JFrame"/>
+<fullyQualifiedTypeName name="java.awt.Image"/>
+<fullyQualifiedTypeName name="com.journalpublication.view.JournalReaderFrame"/>
+<fullyQualifiedTypeName name="org.springframework.dao.DataIntegrityViolationException"/>
+<fullyQualifiedTypeName name="org.springframework.test.context.web.WebAppConfiguration"/>
+<fullyQualifiedTypeName name="com.journalpublication.JournalPublicationApplication"/>
+<fullyQualifiedTypeName name="org.junit.Test"/>
+<fullyQualifiedTypeName name="org.springframework.test.web.servlet.MockMvc"/>
+<fullyQualifiedTypeName name="org.springframework.http.MediaType"/>
+<fullyQualifiedTypeName name="org.aspectj.lang.annotation.Before"/>
+<fullyQualifiedTypeName name="org.junit.Before"/>
+<fullyQualifiedTypeName name="org.springframework.beans.factory.annotation.Autowired"/>
+<fullyQualifiedTypeName name="org.springframework.web.context.WebApplicationContext"/>
+<fullyQualifiedTypeName name="java.net.URLEncoder"/>
+<fullyQualifiedTypeName name="java.nio.charset.Charset"/>
+<fullyQualifiedTypeName name="com.journalpublication.repositories.SubscriptionRepository"/>
+<fullyQualifiedTypeName name="com.journalpublication.domain.Subscription"/>
+<fullyQualifiedTypeName name="org.springframework.test.web.servlet.ResultHandler"/>
+<fullyQualifiedTypeName name="com.jayway.jsonpath.JsonPath"/>
+<fullyQualifiedTypeName name="com.journalpublication.Utils"/>
+</qualifiedTypeNameHistroy>

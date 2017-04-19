@@ -1,0 +1,10 @@
+Find all "ServiceChannel.Return<", Subfolders, Find Results 1, Entire Solution, "*.cs"
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(118):			ReceivingAgentInfo receivingAgentInfo = ServiceChannel.Return<IAgentService, ReceivingAgentInfo>(service =>
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(144):			ReceivingAgentInfo receivingAgentInfo = ServiceChannel.Return<IAgentService, ReceivingAgentInfo>(service => service.GetReceivingAgent(recAgentId));
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(266):			Stream receiptDataStream = ServiceChannel.Return<IReportingService, Stream>(service => service.GetBillInfoForPrinting(billReceiptInfo, reportingOptions, objPrintType, 0));
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(280):			Stream receiptDataStream = ServiceChannel.Return<IReportingService, Stream>(service => service.GetManualBillInfoForPrinting(reportingOptions));
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(434):			AgentLoginSettingsInfo agentLoginSettings = ServiceChannel.Return<IAgentService, AgentLoginSettingsInfo>(service =>
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(596):			AgentLoginSettingsInfo agentLoginSettings = ServiceChannel.Return<IAgentService, AgentLoginSettingsInfo>(service =>
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(799):			AgentLoginSettingsInfo agentLoginSettings = ServiceChannel.Return<IAgentService, AgentLoginSettingsInfo>(service =>
+  C:\Users\nhussein\Source\Repos\FxOnline\Services\BillPayment\CES.SL.BillPayment.Bll\BillReceiptManager.cs(944):			var agentLoginSettings = ServiceChannel.Return<IAgentService, AgentLoginSettingsInfo>(service =>
+  Matching lines: 8    Matching files: 1    Total files searched: 27

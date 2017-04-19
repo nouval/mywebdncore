@@ -1,0 +1,22 @@
+<html>
+  <script language="javascript">
+    function addActiveX(options) {
+      var o = document.createElement('object');
+      for (var key in options){
+        o[key] = options[key];
+      }
+      document.body.appendChild(o);
+    }
+    function loadActiveX() {
+      addActiveX({
+        id:'activex1', 
+        width:400, 
+        height:400, 
+        data:'helloworld.swf', 
+        classid:'clsid:6BF52A52-394A-11d3-B153-00C04F79FAA6'});
+    }
+  </script>
+  <body onload="loadActiveX();"> 
+    </div>  
+  </body>
+</html>

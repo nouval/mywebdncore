@@ -1,0 +1,964 @@
+<html>
+<head>
+    <title>VintaSoft Web TWAIN ActiveX Demo</title>
+    <script language="JavaScript" type="text/javascript">
+
+        var _isScanning = false;
+        var _acquiredImageIndex = -1;
+
+
+        // Scan image(s) from scanner.
+
+        function scanAndConfigure() {
+            if (VSTwain1.IsTwainAvailable == null) {   
+                return;
+            }
+
+            VSTwain1.StartDevice();
+
+            VSTwain1.Register("Euronet Payment Services", "riaenvia.net", "55F9E48995823F3B65DAA5B9DEE9293BDCCBD5D540BF77C3FF5DFD6CB5AFF8524E9DD46994B84894CAA1F9C684C4EAF8C07BA03C7BD5E99E83A92A0E74E8515C523878AAF4A8BE1558D3A02AA91E9BB5FDC76AD0F406B8DBB26BD7E6BF9DAE57C5B3D4257D376778A9D1B33B342CC930EB73FD3332F1A691DD1426E283757D315A9445F3DF197C0367918DA5703BC3F5AD58E7B1A961EE9B597D4566CC9AB9BB")
+
+            VSTwain1.MaxImages = 1;
+            VSTwain1.AutoCleanBuffer = 1;
+            VSTwain1.SelectSource();
+            VSTwain1.ShowUI = 1;
+            VSTwain1.OpenDataSource();
+            VSTwain1.unitOfMeasure = 0;
+            VSTwain1.PixelType = 2; // 2 or 1;
+            VSTwain1.resolution = 300;
+            while(VSTwain1.AcquireModal()){
+                // 
+            };
+            VSTwain1.StopDevice();
+        }
+
+        function ScanImage() {
+            // check that VSTwain1 object is initialized properly
+
+            if (VSTwain1.IsTwainAvailable == null) {
+                alert('boo');
+                return;
+            }
+
+                    // scanner.StartDevice();
+                    // scanner.MaxImages = 1;
+                    // scanner.AutoCleanBuffer = 1;
+                    // scanner.DisableAfterAcquire = 1;
+
+                            // scanner.ShowUI = 0;
+                            // scanner.OpenDataSource();
+                            // scanner.unitOfMeasure = 0;
+
+                            // scanner.PixelType = $scope.Model.UploadInColor ? 2 : 1;
+
+                            // scanner.resolution = 200;                    
+
+            VSTwain1.StartDevice();
+            console.log("vsTwain1.Register: ", VSTwain1.Register("Euronet Payment Services", "riaenvia.net", "55F9E48995823F3B65DAA5B9DEE9293BDCCBD5D540BF77C3FF5DFD6CB5AFF8524E9DD46994B84894CAA1F9C684C4EAF8C07BA03C7BD5E99E83A92A0E74E8515C523878AAF4A8BE1558D3A02AA91E9BB5FDC76AD0F406B8DBB26BD7E6BF9DAE57C5B3D4257D376778A9D1B33B342CC930EB73FD3332F1A691DD1426E283757D315A9445F3DF197C0367918DA5703BC3F5AD58E7B1A961EE9B597D4566CC9AB9BB"));
+            VSTwain1.MaxImages = 1;
+            // VSTwain1.resolution = 300;
+
+// console.log(VSTwain1);
+// VSTwain1.Capability(4432);
+// VSTwain1.CapType = 1; //       ' one value
+// VSTwain1.CapValue = 1 //     ' 300 dpi
+// // VSTwain1.SetCap();
+// // console.log(VSTwain1.GetCap());
+// console.log("VSTwain1.IsCapSupported:", VSTwain1.IsCapSupported());
+
+            VSTwain1.AutoCleanBuffer = 1;
+            VSTwain1.DisableAfterAcquire = 1;
+            console.log("vsTwain1.SelectSource: ", VSTwain1.SelectSource());
+            VSTwain1.ShowUI = 0;
+            VSTwain1.OpenDataSource();
+            VSTwain1.unitOfMeasure = 0;
+            VSTwain1.PixelType = 2; // 2 or 1;
+            VSTwain1.resolution = 300;
+
+            while(VSTwain1.AcquireModal()){
+                // 
+            };
+            console.log("vsTwain1.NumImages: ", VSTwain1.NumImages);
+            var imgPathSet = VSTwain1.GetPathToTempDir() + "temp.jpg";
+            console.log(imgPathSet);
+            if (VSTwain1.SaveImage(0, imgPathSet) == 0) {
+                console.log("VSTwain1.errorString" , VSTwain1.errorString);
+                alert("VSTwain1.errorString" , VSTwain1.errorString);
+            } else {
+                alert('saved!');
+            }
+            alert("here-2");
+            VSTwain1.StopDevice();
+            alert("here-3");
+            alert(VSTwain1.GetSourceProductName(0));
+
+
+            if (VSTwain1.IsTwainAvailable == null) {
+                alert("Web application is configured not correctly.");
+                return;
+            }
+
+            alert('here');
+
+            _isScanning = true;
+            UpdateUI();
+
+            try {
+                var showUI = document.getElementById('ShowUI').checked;
+                var useAdf = document.getElementById('UseADF').checked;
+                var useDuplex = document.getElementById('UseDuplex').checked;
+                var scanPixelTypes = document.getElementsByName('ScanPixelType');
+                var pixelType = 0;
+                if (scanPixelTypes[1].checked)
+                    pixelType = 1;
+                if (scanPixelTypes[2].checked)
+                    pixelType = 2;
+					
+                var deviceSelectedElement = document.getElementById("DevicesSelect");
+                var deviceSelected = deviceSelectedElement.options[deviceSelectedElement.selectedIndex].text;								
+                var selectedDeviceIndex = VSTwain1.DeviceManager_FindDevice(deviceSelected);
+                if (selectedDeviceIndex != VSTwain1.DeviceManager_SelectedDeviceIndex)
+                    VSTwain1.DeviceManager_SelectedDeviceIndex = selectedDeviceIndex;
+
+                // enable/disable the User Interface of device
+                VSTwain1.Device_ShowUI = showUI;
+                // disable the User Interface after the image is acquired
+                VSTwain1.Device_DisableAfterAcquire = 1;
+                // open the device
+                VSTwain1.Device_Open();
+                // set pixel type
+                VSTwain1.Device_ImagePixelType = pixelType;	
+				
+	            // if ADF present
+	            if (!VSTwain1.Device_Info_IsWia(selectedDeviceIndex) && VSTwain1.Device_Feeder_Present)
+				{
+	                // enable/disable ADF if necessary
+	                if (VSTwain1.Device_Feeder_Enabled != useAdf)
+	                    VSTwain1.Device_Feeder_Enabled = useAdf;
+
+	                //enable/disable duplex if necessary
+	                if (VSTwain1.Device_Feeder_DuplexEnabled != useDuplex)
+	                    VSTwain1.Device_Feeder_DuplexEnabled = useDuplex;
+	            }
+
+                // acquire image(s) from the device
+                var acquireModalState = 0;
+                do
+                {
+                    acquireModalState = VSTwain1.Device_AcquireImageModal();
+                    switch (acquireModalState)
+                    {
+                        case 2: 
+                            GoToLastImage();
+                            break;
+
+                        case 4:
+                            alert("Scan is failed: " + VSTwain1.ErrorString);
+                            break;
+                        
+                    };
+                }
+                while (acquireModalState != 0);
+            }
+            catch (ex) {
+                alert(ex.message);
+            }
+            finally {
+                // if device is not closed
+                if (VSTwain1.Device_State > 0)
+                    // close the device
+                    VSTwain1.Device_Close();
+
+                _isScanning = false;
+                UpdateUI();
+            }
+        }
+
+
+        // Navigate images.
+
+        function GoToFirstImage() {
+            if (VSTwain1.AcquiredImages_Count > 0) {
+                _acquiredImageIndex = 0;
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+        function GoToPreviousImage() {
+            if ((VSTwain1.AcquiredImages_Count > 0) && ((_acquiredImageIndex - 1) >= 0)) {
+                _acquiredImageIndex = _acquiredImageIndex - 1;
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+        function GoToNextImage() {
+            if ((VSTwain1.AcquiredImages_Count > 0) && ((_acquiredImageIndex + 1) < VSTwain1.AcquiredImages_Count)) {
+                _acquiredImageIndex = _acquiredImageIndex + 1;
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+        function GoToLastImage() {
+            if (VSTwain1.AcquiredImages_Count > 0) {
+                _acquiredImageIndex = VSTwain1.AcquiredImages_Count - 1;
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+
+        // Delete image(s).
+
+        function DeleteImage() {
+            if (_acquiredImageIndex != -1) {
+                VSTwain1.AcquiredImages_Delete(_acquiredImageIndex);
+
+                if (VSTwain1.AcquiredImages_Count == 0) {
+                    _acquiredImageIndex = -1;
+                }
+                else {
+                    GoToFirstImage();
+                }
+
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+        function DeleteAllImages() {
+            if (VSTwain1.AcquiredImages_Count > 0) {
+                VSTwain1.AcquiredImages_Clear();
+
+                _acquiredImageIndex = -1;
+
+                PreviewImage();
+                UpdateUI();
+            }
+        }
+
+
+        // Edit image.
+
+        function IsImageBlank() {
+            if (VSTwain1.AcquiredImages_IsBlank(_acquiredImageIndex, 0.01, 0) == 0)
+                alert("Image is NOT blank");
+            else
+                alert("Image is blank.");
+        }
+
+        function InvertImage() {
+            VSTwain1.AcquiredImages_InvertImage(_acquiredImageIndex);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+        function IncreaseImageBrightness() {
+            VSTwain1.AcquiredImages_ChangeBrightness(_acquiredImageIndex, 10);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+        function IncreaseImageContrast() {
+            VSTwain1.AcquiredImages_ChangeContrast(_acquiredImageIndex, 10);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+        function RotateImage(angle) {
+            VSTwain1.AcquiredImages_Rotate(_acquiredImageIndex, angle, 0);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+        function DespeckleImage() {
+            VSTwain1.AcquiredImages_Despeckle(_acquiredImageIndex, 8, 25, 30, 400);
+
+            PreviewImage();
+        }
+
+        function DeskewImage() {
+            VSTwain1.AcquiredImages_Deskew(_acquiredImageIndex, 0, 5, 5);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+        function DetectImageBorder() {
+            VSTwain1.AcquiredImages_DetectBorder(_acquiredImageIndex, 5);
+
+            PreviewImage();
+            UpdateImagesInfo();
+        }
+
+
+        // Utils.
+
+        function GetFileExtension(imageFileFormatRadioName) {
+            var imageFileFormats = document.getElementsByName(imageFileFormatRadioName);
+
+            // JPEG
+            if (imageFileFormats[1].checked)
+            {
+                return ".jpg";
+            }
+            // PDF
+            if (imageFileFormats[2].checked)
+            {
+                return ".pdf";
+            }
+            // PNG
+            if (imageFileFormats[3].checked)
+            {
+                return ".png";
+            }
+            // TIFF
+            if (imageFileFormats[4].checked)
+            {
+                return ".tif";
+            }
+
+            return ".bmp";
+        }
+
+        function IsMultipageImageFormat(imageFileFormatRadioName) {
+            var imageFileFormats = document.getElementsByName(imageFileFormatRadioName);
+
+            // PDF
+            if (imageFileFormats[2].checked)
+            {
+                return true;
+            }
+            // TIFF
+            if (imageFileFormats[4].checked)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Save image.
+
+        function SaveImage() {
+            try {
+                var filepath = String(document.getElementById('SaveImagePath').value);
+                if (filepath == "") {
+                    alert('Image file path is not specified.');
+                    return;
+                }
+
+                var saveAllImages = document.getElementById('SaveAllImages').checked;
+                filepath = filepath + GetFileExtension('SaveImageFormat');
+
+                var addToMultiPageFile = document.getElementById('AddToMultiPageFile').checked;
+
+                var saveResult = false;
+                if (saveAllImages) {
+                    VSTwain1.TiffEncoder_MultiPage = true;
+                    VSTwain1.PdfEncoder_MultiPage = true;
+                    for (var i = 0; i < VSTwain1.AcquiredImages_Count; i++) {
+                        if (VSTwain1.AcquiredImages_Save(i, filepath) == 0)
+                            alert("Image " + i + " is not saved: " + VSTwain1.ErrorString);
+                        else
+                            saveResult = true;
+                    }
+                }
+                else if (addToMultiPageFile) {
+                    VSTwain1.TiffEncoder_MultiPage = true;
+                    VSTwain1.PdfEncoder_MultiPage = true;
+                    if (VSTwain1.AcquiredImages_Save(_acquiredImageIndex, filepath) == 0)
+                        alert("Image is not saved: " + VSTwain1.ErrorString);
+                        else
+                            saveResult = true;
+                }
+                else {
+                    VSTwain1.TiffEncoder_MultiPage = false;
+                    VSTwain1.PdfEncoder_MultiPage = false;
+                    if (VSTwain1.AcquiredImages_Save(_acquiredImageIndex, filepath) == 0)
+                        alert("Image is not saved: " + VSTwain1.ErrorString);
+                    else
+                        saveResult = true;
+                }
+
+                if (saveResult)
+                    alert("Image is saved successfully.");
+            }
+            catch (e) {
+                alert("Image is not saved: " + e.message);
+            }
+        }
+
+
+        // Upload image to HTTP server.
+
+        function UploadToHttpServer() {
+            var httpUrl = String(document.getElementById('HttpUrlTextBox').value);
+            var httpTextField1 = String(document.getElementById('HttpTextField1TextBox').value);
+            var httpTextField1Value = String(document.getElementById('HttpTextField1ValueTextBox').value);
+            var httpTextField2 = String(document.getElementById('HttpTextField2TextBox').value);
+            var httpTextField2Value = String(document.getElementById('HttpTextField2ValueTextBox').value);
+            var httpFileField = String(document.getElementById('HttpFileFieldTextBox').value);
+            var httpFileFieldValue = String(document.getElementById('HttpFileFieldValueTextBox').value);
+
+            if (httpFileField == "") {
+                alert('HTTP file name is not specified.');
+                return;
+            }
+            if (httpFileFieldValue == "") {
+                alert('HTTP file value is not specified.');
+                return;
+            }
+
+            document.getElementById('HttpUploadButton').disabled = true;
+            document.getElementById('HttpCancelButton').disabled = false;
+
+            try {
+                if (VSTwain1.HttpUpload_SetServerParams(httpUrl, "http://demos.vintasoft.com/WebTwainDemo/ImageUpload.aspx", 5) == 0) {
+                    alert(VSTwain1.ErrorString);
+                    document.getElementById('HttpUploadButton').disabled = false;
+                    document.getElementById('HttpCancelButton').disabled = true;
+                    return;
+                }
+
+                if (httpTextField1 != "")
+                    VSTwain1.HttpUpload_AddTextField(httpTextField1, httpTextField1Value);
+                if (httpTextField2 != "")
+                    VSTwain1.HttpUpload_AddTextField(httpTextField2, httpTextField2Value);
+
+                var saveAllImages = document.getElementById('UploadAllImagesToHttp').checked;
+                if (saveAllImages && IsMultipageImageFormat('HttpUploadImageFileFormat')) {
+                    var addResult = false;
+                    for (var i = 0; i < VSTwain1.AcquiredImages_Count; i++) {
+                        var imageFileName = "" + httpFileFieldValue + i + GetFileExtension('HttpUploadImageFileFormat');
+                        if (VSTwain1.HttpUpload_AddFileField(httpFileField, imageFileName, i) == 0)
+                            alert('Image ' + i + ' cannot be uploaded: ' + VSTwain1.ErrorString);
+                        else
+                            addResult = true;
+                    }
+                    if (!addResult) {
+                        alert("No images to upload.");
+                        document.getElementById('FtpUploadButton').disabled = false;
+                        document.getElementById('FtpCancelButton').disabled = true;
+                        return;
+                    }
+                }
+                else {
+                    var imageFileName = httpFileFieldValue + GetFileExtension('HttpUploadImageFileFormat');
+                    if (VSTwain1.HttpUpload_AddFileField(httpFileField, imageFileName, _acquiredImageIndex) == 0) {
+                        alert(VSTwain1.ErrorString);
+                        document.getElementById('HttpUploadButton').disabled = false;
+                        document.getElementById('HttpCancelButton').disabled = true;
+                        return;
+                    }
+                }
+
+                if (VSTwain1.HttpUpload_PostData() == 0) {
+                    alert(VSTwain1.ErrorString);
+                    document.getElementById('HttpUploadButton').disabled = false;
+                    document.getElementById('HttpCancelButton').disabled = true;
+                    return;
+                }
+                setTimeout("HttpUploadStatus()", 10);
+            }
+            catch (e) {
+                alert(e.message);
+                document.getElementById('HttpUploadButton').disabled = false;
+                document.getElementById('HttpCancelButton').disabled = true;
+            }
+        }
+
+        function HttpUploadStatus() {
+            var statString = VSTwain1.HttpUpload_StatusString;
+            if (VSTwain1.HttpUpload_Status == 4)
+                statString = statString + " Uploaded " + String(VSTwain1.HttpUpload_BytesUploaded) + " bytes from " + String(VSTwain1.HttpUpload_BytesTotal) + " bytes.";
+            window.status = statString;
+            if ((VSTwain1.HttpUpload_Status == 6) || // Aborting
+                (VSTwain1.HttpUpload_Status == 5) || // Completed
+                (VSTwain1.HttpUpload_Status == 0) || // None
+                (VSTwain1.HttpUpload_ErrorCode != 0) ) {
+                if (VSTwain1.HttpUpload_ErrorCode == 0) {
+                    if (VSTwain1.HttpUpload_ResponseCode == 200) {
+                        alert("HTTP: Image is uploaded successfully!");
+                        alert("Response content: " + VSTwain1.HttpUpload_ResponseString);
+                    }
+                    else {
+                        alert("Response code: " + VSTwain1.HttpUpload_ResponseCode);
+                        alert("Response string: " + VSTwain1.HttpUpload_ResponseString);
+                    }
+                    VSTwain1.HttpUpload_ClearAllFileFields();
+                }
+                else {
+                    alert("Error: " + VSTwain1.HttpUpload_ErrorString);
+                }
+                window.status = "";
+                document.getElementById('HttpUploadButton').disabled = false;
+                document.getElementById('HttpCancelButton').disabled = true;
+            }
+            else
+                setTimeout("HttpUploadStatus()", 10);
+        }
+
+        function CancelUploadToHttpServer() {
+            VSTwain1.HttpUpload_Cancel();
+        }
+
+
+        // Upload image to FTP server.
+
+        function UploadToFtpServer() {
+            document.getElementById('FtpUploadButton').disabled = true;
+            document.getElementById('FtpCancelButton').disabled = false;
+
+            var ftpHost = String(document.getElementById('FtpHostTextBox').value);
+            var ftpUser = String(document.getElementById('FtpUserTextBox').value);
+            var ftpPassword = String(document.getElementById('FtpPasswordTextBox').value);
+            var ftpPath = String(document.getElementById('FtpPathTextBox').value);
+            var ftpFileName = String(document.getElementById('FtpFileNameTextBox').value);
+
+            try {
+                if (VSTwain1.FtpUpload_SetServerParams(ftpHost, 21, ftpUser, ftpPassword, "") == 0) {
+                    alert(VSTwain1.FtpUpload_ErrorString)
+                    document.getElementById('FtpUploadButton').disabled = false;
+                    document.getElementById('FtpCancelButton').disabled = true;
+                    return;
+                }
+
+                VSTwain1.FtpUpload_SetServerAdvancedParams(true, 20);
+
+                var saveAllImages = document.getElementById('UploadAllImagesToFtp').checked;
+                if (saveAllImages && IsMultipageImageFormat('FtpUploadImageFileFormat')) {
+                    var addResult = false;
+                    for (var i = 0; i < VSTwain1.AcquiredImages_Count; i++) {
+                        var imageFileName = "" + ftpFileName + i + GetFileExtension('FtpUploadImageFileFormat');
+                        var pathToUpload = ftpPath + '\\' + imageFileName;
+                        if (VSTwain1.FtpUpload_AddFile(pathToUpload, i) == 0)
+                            alert('Image ' + i + ' cannot be uploaded: ' + VSTwain1.ErrorString);
+                        else
+                            addResult = true;
+                    }
+                    if (!addResult) {
+                        alert("No images to upload.");
+                        document.getElementById('FtpUploadButton').disabled = false;
+                        document.getElementById('FtpCancelButton').disabled = true;
+                        return;
+                    }
+                }
+                else {
+                    var imageFileName = ftpFileName + GetFileExtension('FtpUploadImageFileFormat');
+                    var pathToUpload = ftpPath + '\\' + imageFileName;
+
+                    if (VSTwain1.FtpUpload_AddFile(pathToUpload, _acquiredImageIndex) == 0) {
+                        alert(VSTwain1.FtpUpload_ErrorString);
+                        document.getElementById('FtpUploadButton').disabled = false;
+                        document.getElementById('FtpCancelButton').disabled = true;
+                        return;
+                    }
+                }
+
+                if (VSTwain1.FtpUpload_PostData() == 0) {
+                    alert(VSTwain1.FtpUpload_ErrorString);
+                    document.getElementById('FtpUploadButton').disabled = false;
+                    document.getElementById('FtpCancelButton').disabled = true;
+                    return;
+                }
+                VSTwain1.FtpUpload_ClearAllFiles();
+                setTimeout("FtpUploadStatus()", 10);
+            }
+            catch (e) {
+                alert(e.message);
+                document.getElementById('FtpUploadButton').disabled = false;
+                document.getElementById('FtpCancelButton').disabled = true;
+            }
+        }
+
+        function FtpUploadStatus() {
+            var statString = VSTwain1.FtpUpload_StatusString;
+            if (VSTwain1.FtpUpload_Status == 10)
+                statString = statString + " Uploaded " + String(VSTwain1.FtpUpload_BytesUploaded) + " bytes from " + String(VSTwain1.FtpUpload_BytesTotal) + " bytes.";
+            window.status = statString;
+            if ((VSTwain1.FtpUpload_Status > 3) || // Errors
+                (VSTwain1.FtpUpload_Status == 0) ||  // OK
+                (VSTwain1.FtpUpload_ErrorCode != 0)) {
+                if (VSTwain1.FtpUpload_ErrorCode == 0) {
+                    alert("FTP: Image is uploaded successfully!");
+                }
+                else {
+                    alert("Error: " + VSTwain1.FtpUpload_ErrorString);
+                }
+                window.status = "";
+                document.getElementById('FtpUploadButton').disabled = false;
+                document.getElementById('FtpCancelButton').disabled = true;
+            }
+            else
+                setTimeout("FtpUploadStatus()", 10);
+        }
+
+        function CancelUploadToFtpServer() {
+            VSTwain1.FtpUpload_Cancel();
+        }
+
+
+        // User Interface.
+
+        function UpdateUI() {
+            var isImageAcquired = 0;
+            if (_acquiredImageIndex != -1)
+                isImageAcquired = 1;
+
+            var acquiredImagesCount = VSTwain1.AcquiredImages_Count;
+
+            document.getElementById('ScanImageButton').disabled = _isScanning == true;
+
+            document.getElementById('GoToFirstImageButton').disabled = (acquiredImagesCount <= 1) || (_acquiredImageIndex == 0);
+            document.getElementById('GoToPreviousImageButton').disabled = (acquiredImagesCount <= 1) || (_acquiredImageIndex == 0);
+            document.getElementById('GoToNextImageButton').disabled = (acquiredImagesCount <= 1) || (_acquiredImageIndex == (acquiredImagesCount - 1));
+            document.getElementById('GoToLastImageButton').disabled = (acquiredImagesCount <= 1) || (_acquiredImageIndex == (acquiredImagesCount - 1));
+            document.getElementById('DeleteImageButton').disabled = !isImageAcquired;
+            document.getElementById('DeleteAllImagesButton').disabled = !isImageAcquired;
+
+            document.getElementById('IsImageBlankButton').disabled = !isImageAcquired;
+            document.getElementById('InvertImageButton').disabled = !isImageAcquired;
+            document.getElementById('IncreaseImageBrightnessButton').disabled = !isImageAcquired;
+            document.getElementById('IncreaseImageContrastButton').disabled = !isImageAcquired;
+            document.getElementById('Rotate90Button').disabled = !isImageAcquired;
+            document.getElementById('Rotate180Button').disabled = !isImageAcquired;
+            document.getElementById('Rotate270Button').disabled = !isImageAcquired;
+            document.getElementById('DespeckleButton').disabled = !isImageAcquired;
+            document.getElementById('DeskewButton').disabled = !isImageAcquired;
+            document.getElementById('DetectImageBorderButton').disabled = !isImageAcquired;
+
+            document.getElementById('SaveImagedButton').disabled = !isImageAcquired;
+
+            document.getElementById('HttpUploadButton').disabled = !isImageAcquired;
+
+            document.getElementById('FtpUploadButton').disabled = !isImageAcquired;
+
+            UpdateImagesInfo();
+        }
+
+        function UpdateImagesInfo() {
+            var imagesInfo;
+            if (_acquiredImageIndex == -1)
+                imagesInfo = "No image";
+            else {
+                imagesInfo = "Image N" + (_acquiredImageIndex + 1) + " from " + VSTwain1.AcquiredImages_Count + " images";
+                imagesInfo = imagesInfo + "<br />";
+                imagesInfo = imagesInfo + VSTwain1.AcquiredImages_GetImageWidth(_acquiredImageIndex) + "x" + VSTwain1.AcquiredImages_GetImageHeight(_acquiredImageIndex)
+                imagesInfo = imagesInfo + ", " + VSTwain1.AcquiredImages_GetImageBitDepth(_acquiredImageIndex) + "bpp"
+                imagesInfo = imagesInfo + ", " + VSTwain1.AcquiredImages_GetImageXRes(_acquiredImageIndex) + "x" + VSTwain1.AcquiredImages_GetImageYRes(_acquiredImageIndex) + " dpi"
+            }
+
+            document.getElementById('ImagesInfo').innerHTML = imagesInfo;
+        }
+
+        function PreviewImage() {
+            try {
+                var previewImageObject = document.getElementById("PreviewImage");
+                if (_acquiredImageIndex != -1) {
+                    var imageWidth = VSTwain1.AcquiredImages_GetImageWidth(_acquiredImageIndex);
+                    var thumbnailWidth = 350;
+                    if (thumbnailWidth > imageWidth)
+                        thumbnailWidth = imageWidth;
+
+                    var imageHeight = VSTwain1.AcquiredImages_GetImageHeight(_acquiredImageIndex);
+                    var thumbnailHeight = 350;
+                    if (thumbnailHeight > imageHeight)
+                        thumbnailHeight = imageHeight;
+
+                    // get image thumbnail as Base64 string
+                    var imageThumbnailAsBase64String = VSTwain1.AcquiredImages_GetImageThumbnailAsBase64String(_acquiredImageIndex, 0, thumbnailWidth, thumbnailHeight);
+                    if (VSTwain1.Error) {
+                        alert('Image preview error: ' + VSTwain1.ErrorString);
+                    }
+                    
+                    // preview image in image control
+                    previewImageObject.src = "data:image/bmp;base64," + imageThumbnailAsBase64String;
+                }
+                else
+                    previewImageObject.src = "";
+            }
+            catch (ex) {
+                alert(ex.message);
+            }
+        }
+
+        function onDevicesSelectChange() {
+            //
+            var objSel = document.getElementById("DevicesSelect");
+            // get a reference to current device
+            VSTwain1.SourceIndex = objSel.selectedIndex;
+        }
+
+        function onPageUnload() {
+
+            if (VSTwain1.IsTwainAvailable != null) {
+                alert("loading me...");
+            }
+            // if (VSTwain1.IsTwainAvailable != null) {
+            //     // close the device
+            //     VSTwain1.Device_Close();
+
+            //     // close the device manager
+            //     VSTwain1.DeviceManager_Close();
+            // }
+        }
+    </script>
+</head>
+
+<body onunload="JavaScript:onPageUnload()">
+    <center>
+        <h2>VintaSoft Twain ActiveX HTML Demo for Internet Explorer</h2>
+        This demo shows how to acquire image(s) from scanner, process acquired image,<br />
+        save acquired image to a disk or upload to HTTP or FTP server.<br />
+        <br />
+
+        <!--<object id="VSTwain1" width="1" height="1"
+                classid="CLSID:1169E0CD-9E76-11D7-B1D8-FB63945DE96D"
+                codebase="/4/VSTwain_5.1/VSTwain.dll#version=5,1,0,1">
+                </object>-->
+
+        <!--<object id="VSTwain1" width="1" height="1"
+                classid="CLSID:1169E0CD-9E76-11D7-B1D8-FB63945DE96D"
+                codebase="/4/VSTwain_5.2/VSTwain.dll#version=5,2,15,1">-->
+                </object>
+
+        <object id="VSTwain1" width="1" height="1"
+                classid="CLSID:1169E0CD-9E76-11D7-B1D8-FB63945DE96D"
+                codebase="">
+                </object>
+
+        <!--<object id="VSTwain1" width="1" height="1"
+                classid="CLSID:1169E0CD-9E76-11D7-B1D8-FB63945DE96D"
+                codebase="\vs\5.2\VSTwain.dll">
+                </object>-->
+
+        <form id="ScanImageForm" action="">
+            <label for="DevicesSelect">Devices:</label>
+            <select id="DevicesSelect" onchange="JavaScript:onDevicesSelectChange()"></select>
+            <br />
+            <br />
+
+            <input type="checkbox" id="ShowUI" checked="checked" />Show UI
+            <input type="checkbox" id="UseADF" />Use ADF
+            <input type="checkbox" id="UseDuplex" />Use Duplex
+            <br />
+
+            <label for="ScanPixelType">Pixel Type:</label>
+            <input type="radio" name="ScanPixelType" value="0" />Black-White
+            <input type="radio" name="ScanPixelType" value="1" checked="checked" />Gray
+            <input type="radio" name="ScanPixelType" value="2" />Color
+            <br />
+
+            <br />
+
+            <input type="button" id="ScanImageButton" value="Scan Image" onclick="JavaScript:ScanImage()" />
+            <input type="button" id="ScanImageButton" value="Configure and Scan" onclick="JavaScript:scanAndConfigure()" />
+        </form>
+        <div id="ErrorString"></div>
+
+        <script language="JavaScript" type="text/javascript">
+            if (VSTwain1.IsTwainAvailable != null) {
+                var isTwainAvailable = true;
+                // specify that TWAIN 1.x Data Source Manager should be used
+                VSTwain1.DeviceManager_IsTwain2Compatible = false;
+                // if TWAIN 1.x Data Source Manager is not available
+                if (VSTwain1.IsTwainAvailable == false) {
+                    // specify that TWAIN 2.x Data Source Manager should be used
+                    VSTwain1.DeviceManager_IsTwain2Compatible = true;
+
+                    // if TWAIN 2.x Data Source Manager is not available
+                    if (VSTwain1.IsTwainAvailable == false) {
+                        alert('TWAIN Data Source Manager is not available.');
+                        isTwainAvailable = false;
+                    }
+                }
+
+                if (isTwainAvailable) {
+                    // open the data source manager
+                    if (VSTwain1.DeviceManager_Open() == 0) {
+                        alert(VSTwain1.ErrorString);
+                    }
+                    else {
+                        if (VSTwain1.DeviceManager_DeviceCount > 0) {
+                            //
+                            var currentDeviceIndex = VSTwain1.DeviceManager_DefaultDeviceIndex;
+                            var objSel = document.getElementById("DevicesSelect");
+                            for (var i = 0; i < VSTwain1.DeviceManager_DeviceCount; i++) {
+                                objSel.options.length = objSel.options.length + 1;
+                                objSel.options[i].text = VSTwain1.Device_Info_GetProductName(i);
+                                objSel.options[i].value = i;
+                                if (i == currentDeviceIndex)
+                                    objSel.selectedIndex = i;
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+
+        <hr width="400" />
+
+        <h3>Acquired images</h3>
+        <form id="ImageNavigationForm" action="">
+            <img id="PreviewImage" src="" width="350" height="270" alt="Preview of scanned image" border="1" />
+            <br />
+
+            <div id="ImagesInfo">No image<br /></div>
+            <br />
+
+            <input type="button" value="First Image" id="GoToFirstImageButton" onclick="JavaScript:GoToFirstImage()" disabled="disabled" />
+            <input type="button" value="Previous Image" id="GoToPreviousImageButton" onclick="JavaScript:GoToPreviousImage()" disabled="disabled" />
+            <input type="button" value="Next Image" id="GoToNextImageButton" onclick="JavaScript:GoToNextImage()" disabled="disabled" />
+            <input type="button" value="Last Image" id="GoToLastImageButton" onclick="JavaScript:GoToLastImage()" disabled="disabled" />
+            <br />
+
+            <input type="button" value="Delete Image" id="DeleteImageButton" onclick="JavaScript:DeleteImage()" disabled="disabled" />
+            <input type="button" value="Delete All Images" id="DeleteAllImagesButton" onclick="JavaScript:DeleteAllImages()" disabled="disabled" />
+        </form>
+        <hr width="400" />
+
+
+        <h3>Edit acquired image</h3>
+        <form id="EditImageForm" action="">
+            <input type="button" value="Is Image Blank?" id="IsImageBlankButton" onclick="JavaScript:IsImageBlank()" disabled="disabled" />
+            <br />
+
+            <input type="button" value="Invert" id="InvertImageButton" onclick="JavaScript:InvertImage()" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Increase Brightness" id="IncreaseImageBrightnessButton" onclick="JavaScript:IncreaseImageBrightness()" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Increase Contrast" id="IncreaseImageContrastButton" onclick="JavaScript:IncreaseImageContrast()" disabled="disabled" />
+            <br />
+
+            <input type="button" value="Rotate 90" id="Rotate90Button" onclick="JavaScript:RotateImage(90)" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Rotate 180" id="Rotate180Button" onclick="JavaScript:RotateImage(180)" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Rotate 270" id="Rotate270Button" onclick="JavaScript:RotateImage(270)" disabled="disabled" />
+            <br />
+
+            <input type="button" value="Despeckle" id="DespeckleButton" onclick="JavaScript:DespeckleImage()" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Deskew" id="DeskewButton" onclick="JavaScript:DeskewImage()" disabled="disabled" />
+            &nbsp; &nbsp;
+            <input type="button" value="Detect Border" id="DetectImageBorderButton" onclick="JavaScript:DetectImageBorder()" disabled="disabled" />
+        </form>
+        <hr width="400" />
+
+
+        <h3>Save acquired image(s) to a local disk</h3>
+        <form id="SaveImageForm" action="">
+            Image path without file extension:
+            <input type="text" size="50" value="d:\test" id="SaveImagePath" /><br />
+            <input type="radio" name="SaveImageFormat" value="0" onclick="AddToMultiPageFile.disabled = true; SaveAllImages.disabled = true;" />BMP
+            <input type="radio" name="SaveImageFormat" value="1" onclick="AddToMultiPageFile.disabled = true; SaveAllImages.disabled = true;" checked="checked" />JPEG
+            <input type="radio" name="SaveImageFormat" value="2" onclick="AddToMultiPageFile.disabled = false; SaveAllImages.disabled = false;" />PDF
+            <input type="radio" name="SaveImageFormat" value="3" onclick="AddToMultiPageFile.disabled = true; SaveAllImages.disabled = true;" />PNG
+            <input type="radio" name="SaveImageFormat" value="4" onclick="AddToMultiPageFile.disabled = false; SaveAllImages.disabled = false;" />TIFF
+            <br />
+            <br />
+            <input type="checkbox" id="AddToMultiPageFile" disabled="true" />Add acquired image to multipage TIFF/PDF file<br />
+            <input type="checkbox" id="SaveAllImages" disabled="true" />Save all acquired images as multipage TIFF/PDF file<br />
+            <br />
+            <input type="button" onclick="JavaScript:SaveImage()" value="Save Image" id="SaveImagedButton" disabled="disabled" />
+        </form>
+        <hr width="400" />
+
+
+        <h3>Upload acquired image to HTTP server</h3>
+        <form id="UploadImageToHttpForm" action="">
+            <table width="500" border="0" cellpadding="0">
+                <tr>
+                    <td width="100">HTTP Url:</td>
+                    <td width="400" colspan="3"><input type="text" size="55" value="http://demos.vintasoft.com/WebTwainDemo/ImageUpload.aspx" id="HttpUrlTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>File field:</td>
+                    <td><input type="text" size="20" value="file" id="HttpFileFieldTextBox" /></td>
+                    <td>Value:</td>
+                    <td><input type="text" size="30" value="image" id="HttpFileFieldValueTextBox" /></td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <input type="radio" name="HttpUploadImageFileFormat" value="0" onclick="UploadAllImagesToHttp.disabled = true;" />BMP
+                        <input type="radio" name="HttpUploadImageFileFormat" value="2" onclick="UploadAllImagesToHttp.disabled = true;" checked="checked" />JPEG
+                        <input type="radio" name="HttpUploadImageFileFormat" value="3" onclick="UploadAllImagesToHttp.disabled = false;" />PDF
+                        <input type="radio" name="HttpUploadImageFileFormat" value="4" onclick="UploadAllImagesToHttp.disabled = true;" />PNG
+                        <input type="radio" name="HttpUploadImageFileFormat" value="5" onclick="UploadAllImagesToHttp.disabled = false;" />TIFF
+                    </td>
+                </tr>
+                <tr>
+                    <td>Text field 1:</td>
+                    <td><input type="text" size="20" value="" id="HttpTextField1TextBox" /></td>
+                    <td>Value:</td>
+                    <td><input type="text" size="30" value="" id="HttpTextField1ValueTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>Text field 2:</td>
+                    <td><input type="text" size="20" value="" id="HttpTextField2TextBox" /></td>
+                    <td>Value:</td>
+                    <td><input type="text" size="30" value="" id="HttpTextField2ValueTextBox" /></td>
+                </tr>
+            </table>
+            <br />
+            <input type="checkbox" id="UploadAllImagesToHttp" disabled="true" />Upload all acquired images as multipage TIFF/PDF file<br />
+            <br />
+            <input style="LEFT: 17px; WIDTH: 241px; TOP: 363px; HEIGHT: 29px" onclick="JavaScript:UploadToHttpServer()" type="button" size="34" value="Upload image to HTTP server" id="HttpUploadButton" disabled="disabled" />&nbsp;&nbsp;
+            <input style="LEFT: 17px; WIDTH: 100px; TOP: 363px; HEIGHT: 29px" onclick="JavaScript:CancelUploadToHttpServer()" type="button" size="34" value="Cancel" id="HttpCancelButton" disabled="disabled" />
+        </form>
+        <hr width="400" />
+
+
+        <h3>Upload acquired image(s) to FTP server</h3>
+        <form id="UploadImageToFtpForm" action="">
+            <table width="500" border="0" cellpadding="0">
+                <tr>
+                    <td width="100">FTP server:</td>
+                    <td width="400"><input type="text" size="50" value="ftp.test.com" id="FtpHostTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>FTP user:</td>
+                    <td><input type="text" size="50" value="guest" id="FtpUserTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>FTP password:</td>
+                    <td><input type="password" size="50" value="" id="FtpPasswordTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>FTP path:</td>
+                    <td><input type="text" size="50" value="/imgs/" id="FtpPathTextBox" /></td>
+                </tr>
+                <tr>
+                    <td>FTP file name:</td>
+                    <td><input type="text" size="50" value="image" id="FtpFileNameTextBox" /></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="radio" name="FtpUploadImageFileFormat" value="0" onclick="UploadAllImagesToFtp.disabled = true;" />BMP
+                        <input type="radio" name="FtpUploadImageFileFormat" value="2" onclick="UploadAllImagesToFtp.disabled = true;" checked="checked" />JPEG
+                        <input type="radio" name="FtpUploadImageFileFormat" value="3" onclick="UploadAllImagesToFtp.disabled = false;" />PDF
+                        <input type="radio" name="FtpUploadImageFileFormat" value="4" onclick="UploadAllImagesToFtp.disabled = true;" />PNG
+                        <input type="radio" name="FtpUploadImageFileFormat" value="5" onclick="UploadAllImagesToFtp.disabled = false;" />TIFF
+                    </td>
+                </tr>
+            </table>
+            <br />
+            <input type="checkbox" id="UploadAllImagesToFtp" disabled="true" />Upload all acquired images as multipage TIFF/PDF file<br />
+            <br />
+            <input style="LEFT: 17px; WIDTH: 241px; TOP: 363px; HEIGHT: 29px" onclick="JavaScript:UploadToFtpServer()" type="button" size="34" value="Upload image to FTP server" id="FtpUploadButton" disabled="disabled" />&nbsp;&nbsp;
+            <input style="LEFT: 17px; WIDTH: 100px; TOP: 363px; HEIGHT: 29px" onclick="JavaScript:CancelUploadToFtpServer()" type="button" size="34" value="Cancel" id="FtpCancelButton" disabled="disabled" />
+        </form>
+
+        <br />
+        <br />
+
+    </center>
+</body>
+</html>

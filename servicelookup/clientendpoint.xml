@@ -1,0 +1,96 @@
+<client>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21320/ImageService" binding="netTcpBinding" behaviorConfiguration="clientEndPointBehavior" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.Images.Contract.IImageService" name="CES.SL.Images.Contract.IImageService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21307/AccountingService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" 
+			  bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.Accounting.Contract.IAccountingService" name="CES.SL.Accounting.Contract.IAccountingService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21310/OfacService.svc/OfacService" binding="netTcpBinding" behaviorConfiguration="clientEndPointBehavior" 
+			  bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.Compliance.Ofac.Contract.IOfacService" name="CES.SL.Compliance.Ofac.Contract.IOfacService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21311/SarService.svc/SarService" binding="netTcpBinding" behaviorConfiguration="clientEndPointBehavior" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.Compliance.Sar.Contract.ISarService" name="CES.SL.Compliance.Sar.Contract.ISarService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21321/PricingService.svc/PricingService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.MT.Pricing.Contract.IPricingService" name="CES.SL.MT.Pricing.Contract.IPricingService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21322/RiaLinkService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.RiaLink.Contract.IRiaLinkService" name="CES.SL.RiaLink.Contract.IRiaLinkService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21324/DocumentService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.Documents.Contract.IDocumentService" name="CES.SL.Documents.Contract.IDocumentService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21325/ReportingService.svc/ReportingService" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" behaviorConfiguration="clientEndPointBehavior" contract="CES.SL.Reporting.Contract.IReportingService" name="CES.SL.Reporting.Contract.IReportingService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21318/JobService" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" behaviorConfiguration="clientEndPointBehavior" contract="CES.SL.Jobs.Contract.IJobService" name="CES.SL.Jobs.Contract.IJobService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21327/ForeignExchangeService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.ForeignExchange.Contract.IForeignExchange" name="CES.SL.ForeignExchange.Contract.IForeignExchange">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21328/BillPaymentService.svc/BillPaymentService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.BillPayment.Contract.IBillPaymentService" name="CES.SL.BillPayment.Contract.IBillPaymentService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21330/MinimumChargeService" behaviorConfiguration="clientEndPointBehavior" bindingConfiguration="nettcpStreamingConfiguration" binding="netTcpBinding" contract="CES.SL.Agents.MinimumCharge.Contract.IMinimumChargeService" name="CES.SL.Agents.MinimumCharge.Contract.IMinimumChargeService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="http://10.30.99.11:9712/Services/WCF/AddressValidation" binding="wsHttpBinding" bindingConfiguration="wsHttpBinding_AddressValidation" contract="AddressValidationService.IAddressValidation" name="wsHttpBinding_AddressValidation">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="http://10.30.99.11:2136/Debit_SoapService" binding="basicHttpBinding" bindingConfiguration="Debit_SoapService_Binding" contract="Debit_SoapService.Debit_SoapService_PortType" name="Debit_SoapService_Deployed"/>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21317/DebitCardService" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.DebitCard.Contract.IDebitCardService" name="CES.SL.DebitCard.Contract.IDebitCardService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	
+  <endpoint address="http://devcoreapi.riadev.local/BankAccounts/BankAccountService.svc" binding="basicHttpBinding" bindingConfiguration="basicHttpBindingConfiguration_IBankAccountService" contract="BankAccountService.IBankAccountService" name="basicHttpBindingConfiguration_IBankAccountService" >
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+
+	<endpoint address="net.tcp://10.30.99.11:7401/ISO8583WalmartService.svc/ISO8583WalmartService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.ISO8583Service.Walmart.Contract.IISO8583WalmartService" name="CES.SL.ISO8583Service.Walmart.Contract.IISO8583WalmartService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="net.tcp://devfxweb1.riadev.local:21309/CrossSellingService" behaviorConfiguration="clientEndPointBehavior" binding="netTcpBinding" bindingConfiguration="nettcpStreamingConfiguration" contract="CES.SL.CrossSelling.Contract.ICrossSellingService" name="CES.SL.CrossSelling.Contract.ICrossSellingService">
+		<identity>
+			<dns value="localhost" />
+		</identity>
+	</endpoint>
+	<endpoint address="https://demoidcloud.icarvision.com:50061/iCarSAAS.WsPublic/WsDocument.asmx"
+		binding="basicHttpBinding" bindingConfiguration="ICARService_Binding"
+		contract="ICARService.WsDocumentSoap" name="WsDocumentSoap" >
+	</endpoint>
+</client>

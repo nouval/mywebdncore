@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Vanilla Ajax without jQuery</title>
+    <script src="/scripts/fxtracker.js" fte-pl="33" async></script>
+    <script src="/scripts/index.js" async></script>
+</head>
+<body>
+    <form action="/index.html" method="get">
+        // views/index.html
+        <h1 fte-cl="123">Vanilla Ajax without jQuery</h1>
+        <button type="button" id="retrieve" data-url="/hello-world.json">Retrieve</button>
+        <button type="submit" id="track1" fte-cl="11">track#1</button>
+        <button type="button" id="track2">non-tracked</button>
+        <button type="button" id="track3" fte-cl="22" data-url="/hello-earth.json">track#3</button>
+        <select id="select_1" name="select_1" fte-sl="sel1">
+            <option value="sel_1_1">item-1</option>
+            <option value="sel_1_2">item-2</option>
+            <option value="sel_1_3">item-3</option>
+        </select>
+        <p id="results" fte-dl="55"></p>
+        <input id="input_1" name="input_1" type="text" fte-kp-ent="input_1"/>
+    </form>
+</body>
+</html>

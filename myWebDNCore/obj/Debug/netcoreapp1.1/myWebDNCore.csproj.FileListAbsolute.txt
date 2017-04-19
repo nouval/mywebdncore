@@ -1,0 +1,8 @@
+/Users/nouval/Development/source/myWebDNCore/bin/Debug/netcoreapp1.1/myWebDNCore.deps.json
+/Users/nouval/Development/source/myWebDNCore/bin/Debug/netcoreapp1.1/myWebDNCore.runtimeconfig.json
+/Users/nouval/Development/source/myWebDNCore/bin/Debug/netcoreapp1.1/myWebDNCore.runtimeconfig.dev.json
+/Users/nouval/Development/source/myWebDNCore/bin/Debug/netcoreapp1.1/myWebDNCore.dll
+/Users/nouval/Development/source/myWebDNCore/bin/Debug/netcoreapp1.1/myWebDNCore.pdb
+/Users/nouval/Development/source/myWebDNCore/obj/Debug/netcoreapp1.1/myWebDNCore.AssemblyInfo.cs
+/Users/nouval/Development/source/myWebDNCore/obj/Debug/netcoreapp1.1/myWebDNCore.dll
+/Users/nouval/Development/source/myWebDNCore/obj/Debug/netcoreapp1.1/myWebDNCore.pdb

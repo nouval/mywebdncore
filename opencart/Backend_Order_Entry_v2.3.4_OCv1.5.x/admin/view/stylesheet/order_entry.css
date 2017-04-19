@@ -1,0 +1,428 @@
+table.form > tbody > tr > td {
+	border-bottom: none;
+}
+a.small_button, .list a.small_button {
+	background-color: #B40404;
+	border-radius: 2px;
+	box-shadow: 0 0 2px #333;
+	color: #FFF;
+	font-weight: bold;
+	margin-left: 4px;
+	padding: 3px 7px;
+	text-shadow: 0.5px 0 0.5px #333;
+}
+a.small_button:hover, .list a.small_button:hover {
+	background-color: #000;
+}
+a.button2, .list a.button2 {
+	display: inline-block;
+	padding: 5px 15px 5px 15px;
+	margin-right: 7px;
+	margin-top: 5px;
+	text-decoration: none;
+	color: #FFF;
+	font-weight: bold;
+	background: #B40404;
+	-webkit-border-radius: 10px 10px 10px 10px;
+	-moz-border-radius: 10px 10px 10px 10px;
+	-khtml-border-radius: 10px 10px 10px 10px;
+	border-radius: 10px 10px 10px 10px;
+}
+#orders {
+	width: 98%;
+	float: left;
+	padding: 0 10px;
+	margin-bottom: 10px;
+}
+#orders h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	font-size: 16px;
+	color: #B40404;
+	margin-left: 12px;
+	text-transform: uppercase;
+}
+.customer-table {
+	width: 100%;
+	margin-bottom: 10px;
+	border-collapse: collapse;
+	border-top: 1px solid #DDDDDD;
+	border-left: 1px solid #DDDDDD;
+}
+.customer-table td {
+	border-right: 1px solid #DDDDDD;
+	border-bottom: 1px solid #DDDDDD;
+	overflow: hidden;
+}
+.customer-table thead td {
+	padding: 0px 5px;
+	background-color: #EFEFEF;
+}
+.customer-table thead td a, .list thead td {
+	text-decoration: none;
+	color: #222222;
+	font-weight: bold;
+}
+.customer-table tbody td a {
+	text-decoration: underline;
+}
+.customer-table tbody td {
+	padding: 0px 5px;
+	vertical-align: middle;
+	background: #FFFFFF;
+}
+.customer-table .header {
+	padding: 7px;
+	font-weight: bold;
+	font-size: 16px;
+	color: #333;
+	text-align: left;
+}
+.customer-table .header a {
+	font-weight: normal;
+	font-size: 12px;
+	color: #FFF;
+	text-align: center;
+}
+.customer-table .label-left {
+	padding: 7px;
+	font-weight: bold;
+	text-align: left;
+}
+.customer-table .label-right {
+	padding: 7px;
+	font-weight: bold;
+	text-align: right;
+}
+.customer-table .label-center {
+	padding: 7px;
+	font-weight: bold;
+	text-align: center;
+}
+.customer-table .data-left {
+	padding: 7px;
+	text-align: left;
+}
+.customer-table .data-right {
+	padding: 7px;
+	text-align: right;
+}
+.customer-table .data-center {
+	padding: 7px;
+	text-align: center;
+}
+.customer-table .data-left input {
+	float: left;
+}
+.customer-table .filter td {
+	padding: 5px;
+	background: #E7EFEF;
+}
+
+#new_customer_form {
+	float: left;
+	width: 100%;
+}
+#new_customer_form h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	font-size: 16px;
+	color: #B40404;
+	text-transform: uppercase;
+}
+
+#customer_info {
+	float: left;
+	width: 100%;
+	margin-bottom: 10px;
+}
+#customer_info select {
+	height: 22px;
+	padding: 2px;
+}
+#customer_info .customer_left {
+	clear: both;
+	float: left;
+	width: 48%;
+	min-height: 300px;
+	border: 1px solid #eee;
+	border-radius: 5px;
+	padding-left: 10px;
+}
+#customer_info .customer_left h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	color: #B40404;
+	text-transform: uppercase;
+}
+#customer_info .customer_left .billing_address {
+	float: left;
+	width: 99%;
+	padding-top: 10px;
+	border-top: 1px solid #D7D7D7;
+}
+#customer_info .customer_right {
+	float: right;
+	width: 48%;
+	min-height: 300px;
+	border: 1px solid #eee;
+	border-radius: 5px;
+	padding-left: 10px;
+}
+#customer_info .customer_right h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	color: #B40404;
+	text-transform: uppercase;
+}
+#customer_info .customer_right .shipping_address {
+	float: left;
+	width: 99%;
+	padding-top: 10px;
+	border-top: 1px solid #D7D7D7;
+}
+#product_info {
+	width: 100%;
+	float: left;
+	margin-bottom: 10px;
+	padding-top: 10px;
+	border: 1px solid #eee;
+}
+#product_info h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	color: #B40404;
+	text-transform: uppercase;
+}
+.product-table {
+	width: 99%;
+	margin-bottom: 10px;
+	margin-left: 6px;
+	margin-right: 5px;
+	border-collapse: collapse;
+	border-top: 1px solid #DDDDDD;
+	border-left: 1px solid #DDDDDD;
+}
+.product-table td {
+	border-right: 1px solid #DDDDDD;
+	border-bottom: 1px solid #DDDDDD;
+}
+.product-table thead td {
+	padding: 0px 5px;
+	background-color: #EFEFEF;
+}
+.product-table thead td a, .list thead td {
+	text-decoration: none;
+	color: #222222;
+	font-weight: bold;
+}
+.product-table tbody td a {
+	text-decoration: underline;
+}
+.product-table tbody td a.button {
+	text-decoration: none;
+}
+.product-table tbody td {
+	padding: 0px 5px;
+	vertical-align: middle;
+	background: #FFFFFF;
+}
+.product-table tfoot td a {
+	text-decoration: underline;
+}
+.product-table tfoot td a.button {
+	text-decoration: none;
+}
+.product-table tfoot td {
+	padding: 0px 5px;
+	vertical-align: middle;
+	background: #FFFFFF;
+}
+.product-table .header {
+	padding: 7px;
+	font-weight: bold;
+	font-size: 16px;
+	color: #333;
+	text-align: left;
+}
+.product-table .header a {
+	font-weight: normal;
+	font-size: 12px;
+	color: #FFF;
+	text-align: center;
+}
+.product-table .label-left {
+	padding: 7px;
+	font-weight: bold;
+	text-align: left;
+}
+.product-table .label-right {
+	padding: 7px;
+	font-weight: bold;
+	text-align: right;
+}
+.product-table .label-center {
+	padding: 7px;
+	font-weight: bold;
+	text-align: center;
+}
+.product-table .data-left {
+	padding: 7px;
+	text-align: left;
+}
+.product-table .data-right {
+	padding: 7px;
+	text-align: right;
+}
+.product-table .data-center {
+	padding: 7px;
+	text-align: center;
+}
+.product-table .totals-label {
+	width: 33%;
+	padding: 7px;
+	font-weight: bold;
+	text-align: right;
+}
+.product-table .totals-data {
+	width: 67%;
+	padding: 7px;
+	text-align: right;
+}
+.product-table .totals-data3 {
+	width: 30%;
+	padding: 7px;
+	text-align: right;
+	color: blue;
+}
+.product-table .totals-data1 {
+	width: 10%;
+	padding: 7px;
+	text-align: right;
+	color: blue;
+}
+.product-table .totals-taxdata1 {
+	width: 10%;
+	padding: 7px;
+	text-align: right;
+	color: blue;
+}
+.product-table .totals-full {
+	width: 100%;
+	padding: 7px;
+	font-weight: bold;
+	text-align: right;
+}
+#comments_info {
+	float: left;
+	width: 50%;
+	overflow: scroll;
+}
+#comments_info h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	color: #B40404;
+	text-transform: uppercase;
+}
+#total_info {
+	float: right;
+	width: 50%;
+}
+#total_info h2 {
+	font-family: lucida sans,arial,tahoma,times new roman;
+	border-bottom: none;
+	color: #B40404;
+	text-transform: uppercase;
+}
+#total_info .total_full {
+	float: left;
+	width: 98%;
+	border: 1px solid #EEE;
+	padding: 8px;
+}
+
+#confirm {
+	float: right;
+	width: 40%;
+	margin-top: 20px;
+}
+.select_options {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	width: 600px;
+	height: 400px;
+	margin-left: -300px;
+	margin-top: -200px;
+	padding: 10px;
+	background: #F2F2F2;
+	border: 2px solid #000;
+	border-radius: 5px;
+	overflow-y: scroll;
+}
+.credit_card {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	width: 560px;
+	height: 360px;
+	margin-left: -280px;
+	margin-top: -160px;
+	padding: 10px;
+	background: #F2F2F2;
+	border: 2px solid #000;
+	border-radius: 5px;
+}
+#please_wait {
+	position: fixed;
+	display: block;
+	top: 50%;
+	left: 50%;
+	width: 300px;
+	height: 24px;
+	margin-left: -150px;
+	margin-top: -12px;
+    padding: 8px;
+	background-color: #FFF;
+	border: 1px solid #D1D1D1;
+	border-radius: 5px;
+	box-shadow: 1px 1px 2px #000;
+	z-index: 1;
+	color: red;
+	font-weight: bold;
+	font-size: 18px;
+	text-align: center;
+}
+#image_viewer {
+	position: fixed;
+	display: block;
+	top: 50%;
+	left: 50%;
+    padding: 2px;
+	background-color: #FFF;
+	border: 1px solid #D1D1D1;
+	border-radius: 5px;
+	box-shadow: 1px 1px 2px #000;
+	z-index: 1;
+	text-align: center;
+	overflow: hidden;
+	cursor: pointer;
+}
+#dropship_address {
+	position: fixed;
+	display: block;
+	top: 50%;
+	left: 50%;
+	width: 400px;
+	min-height: 280px;
+	margin-left: -200px;
+	margin-top: -140px;
+    padding: 8px;
+	background-color: #FFF;
+	border: 1px solid #D1D1D1;
+	border-radius: 5px;
+	box-shadow: 1px 1px 2px #000;
+	z-index: 1;
+	overflow: hidden;
+	cursor: pointer;
+}

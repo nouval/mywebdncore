@@ -1,0 +1,2827 @@
+<modification>
+	<id>Order Entry - Payment Methods Modifications</id>
+	<version>2.3.4</version>
+	<vqmver>2.x</vqmver>
+	<author>ACFD Development</author>
+	
+	<file name="catalog/model/payment/authorizenet_aim.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('authorizenet_aim_server') == 'live') {
+						$url = 'https://secure.authorize.net/gateway/transact.dll';
+					} elseif ($this->config->get('authorizenet_aim_server') == 'test') {
+						$url = 'https://test.authorize.net/gateway/transact.dll';		
+					}	
+					//$url = 'https://secure.networkmerchants.com/gateway/transact.dll';	
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$data = array();
+					$data['x_login'] = $this->config->get('authorizenet_aim_login');
+					$data['x_tran_key'] = $this->config->get('authorizenet_aim_key');
+					$data['x_version'] = '3.1';
+					$data['x_delim_data'] = 'true';
+					$data['x_delim_char'] = ',';
+					$data['x_encap_char'] = '"';
+					$data['x_relay_response'] = 'false';
+					$data['x_first_name'] = html_entity_decode($order_info['payment_firstname'], ENT_QUOTES, 'UTF-8');
+					$data['x_last_name'] = html_entity_decode($order_info['payment_lastname'], ENT_QUOTES, 'UTF-8');
+					$data['x_company'] = html_entity_decode($order_info['payment_company'], ENT_QUOTES, 'UTF-8');
+					$data['x_address'] = html_entity_decode($order_info['payment_address_1'], ENT_QUOTES, 'UTF-8');
+					$data['x_city'] = html_entity_decode($order_info['payment_city'], ENT_QUOTES, 'UTF-8');
+					$data['x_state'] = html_entity_decode($order_info['payment_zone'], ENT_QUOTES, 'UTF-8');
+					$data['x_zip'] = html_entity_decode($order_info['payment_postcode'], ENT_QUOTES, 'UTF-8');
+					$data['x_country'] = html_entity_decode($order_info['payment_country'], ENT_QUOTES, 'UTF-8');
+					$data['x_phone'] = $order_info['telephone'];
+					$data['x_customer_ip'] = $this->request->server['REMOTE_ADDR'];
+					$data['x_email'] = $order_info['email'];
+					if (isset($this->session->data['store_id'])) {
+						$store_name = $this->session->data['store_config']['config_name'];
+					} else {
+						$store_name = $this->config->get('config_name');
+					}
+					$data['x_description'] = html_entity_decode($store_name, ENT_QUOTES, 'UTF-8');
+					$amt = $order_info['total'];
+					$data['x_amount'] = $this->currency->format($amt, $order_info['currency_code'], 1.00000, false);
+					$data['x_currency_code'] = $order_info['currency_code'];
+					$data['x_method'] = 'CC';
+					$data['x_type'] = ($this->config->get('authorizenet_aim_method') == 'capture') ? 'AUTH_CAPTURE' : 'AUTH_ONLY';
+					$data['x_card_num'] = str_replace(' ', '', $postdata['cc_number']);
+					$data['x_exp_date'] = $postdata['cc_expire_date_month'] . $postdata['cc_expire_date_year'];
+					$data['x_card_code'] = $postdata['cc_cvv2'];
+					$data['x_invoice_num'] = $order_id;
+					$data['x_ship_to_first_name'] = html_entity_decode($order_info['shipping_firstname'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_last_name'] = html_entity_decode($order_info['shipping_lastname'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_company'] = html_entity_decode($order_info['shipping_company'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_address'] = html_entity_decode($order_info['shipping_address_1'], ENT_QUOTES, 'UTF-8') . ' ' . html_entity_decode($order_info['shipping_address_2'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_city'] = html_entity_decode($order_info['shipping_city'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_state'] = html_entity_decode($order_info['shipping_zone'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_zip'] = html_entity_decode($order_info['shipping_postcode'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_country'] = html_entity_decode($order_info['shipping_country'], ENT_QUOTES, 'UTF-8');
+					if ($this->config->get('authorizenet_aim_mode') == 'test') {
+						$data['x_test_request'] = 'true';
+					}	
+					$curl = curl_init($url);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+					curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data, '', '&'));
+					$response = curl_exec($curl);
+					$success = "";
+					if (curl_error($curl)) {
+						$success = 'CURL ERROR: ' . curl_errno($curl) . '::' . curl_error($curl);
+						$this->log->write('AUTHNET AIM CURL ERROR: ' . curl_errno($curl) . '::' . curl_error($curl));	
+					} elseif ($response) {
+						$i = 1;
+						$response_info = array();
+						$results = explode(',', $response);
+						foreach ($results as $result) {
+							$response_info[$i] = trim($result, '"');
+							$i++;
+						}
+						if ($response_info[1] == '1') {
+							$order_status_id = $this->config->get('authorizenet_aim_order_status_id');
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+							}
+							$message = '';
+							if (isset($response_info['5'])) {
+								$message .= 'Authorization Code: ' . $response_info['5'] . "\n";
+							}
+							if (isset($response_info['6'])) {
+								$message .= 'AVS Response: ' . $response_info['6'] . "\n";
+							}
+							if (isset($response_info['7'])) {
+								$message .= 'Transaction ID: ' . $response_info['7'] . "\n";
+							}
+							if (isset($response_info['39'])) {
+								$message .= 'Card Code Response: ' . $response_info['39'] . "\n";
+							}
+							if (isset($response_info['40'])) {
+								$message .= 'Cardholder Authentication Verification Response: ' . $response_info['40'] . "\n";
+							}
+							if (!$this->config->get('authorizenet_aim_hash') || (strtoupper($response_info[38]) == strtoupper(md5($this->config->get('authorizenet_aim_hash') . $this->config->get('authorizenet_aim_login') . $response_info[7] . $this->currency->format($amt, $order_info['currency_code'], 1.00000, false))))) {
+								if (!isset($this->session->data['edit_order'])) {
+									$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+								} else {
+									$this->session->data['payment_message'] = $message;
+								}
+							}
+							$success = "success";
+						} else {
+							$success = $response_info[4];
+						}
+					} else {
+						$success = 'Empty Gateway Response';
+						$this->log->write('AUTHNET AIM CURL ERROR: Empty Gateway Response');
+					}
+					curl_close($curl);
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="catalog/model/payment/authorizenet_aim_simple.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				private function get_form() {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('authorizenet_aim_simple_server') == 'live') {
+						$url = 'https://www.eProcessingNetwork.Com/cgi-bin/an/transact.pl';
+					} elseif ($this->config->get('authorizenet_aim_simple_server') == 'test') {
+						$url = 'https://test.authorize.net/gateway/transact.dll';
+					}
+					//$url = 'https://secure.networkmerchants.com/gateway/transact.dll';    
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$data = array();
+					$data['x_login']          = $this->config->get('authorizenet_aim_simple_login');
+					$data['x_tran_key']       = $this->config->get('authorizenet_aim_simple_key');
+					$data['x_version']        = '3.1';
+					$data['x_delim_data']     = 'true';
+					$data['x_delim_char']     = ',';
+					$data['x_encap_char']     = '"';
+					$data['x_relay_response'] = 'false';
+					$data['x_first_name']     = html_entity_decode($order_info['payment_firstname'], ENT_QUOTES, 'UTF-8');
+					$data['x_last_name']      = html_entity_decode($order_info['payment_lastname'], ENT_QUOTES, 'UTF-8');
+					$data['x_company']        = html_entity_decode($order_info['payment_company'], ENT_QUOTES, 'UTF-8');
+					$data['x_address']        = html_entity_decode($order_info['payment_address_1'], ENT_QUOTES, 'UTF-8');
+					$data['x_city']           = html_entity_decode($order_info['payment_city'], ENT_QUOTES, 'UTF-8');
+					$data['x_state']          = html_entity_decode($order_info['payment_zone'], ENT_QUOTES, 'UTF-8');
+					$data['x_zip']            = html_entity_decode($order_info['payment_postcode'], ENT_QUOTES, 'UTF-8');
+					$data['x_country']        = html_entity_decode($order_info['payment_country'], ENT_QUOTES, 'UTF-8');
+					$data['x_phone']          = $order_info['telephone'];
+					$data['x_customer_ip']    = $this->request->server['REMOTE_ADDR'];
+				    /*$data['x_email']          = $order_info['email'];  MSW Remove Customer Email Notification */
+					if (isset($this->session->data['store_id'])) {
+						$store_name = $this->session->data['store_config']['config_name'];
+					} else {
+						$store_name = $this->config->get('config_name');
+					}
+					$data['x_description'] = html_entity_decode($store_name, ENT_QUOTES, 'UTF-8');
+					$amt = $order_info['total'];
+					$data['x_amount'] 		  = $this->currency->format($amt, $order_info['currency_code'], 1.00000, false);
+					$data['x_currency_code']  = $order_info['currency_code'];
+					$data['x_method']         = 'CC';
+					$data['x_type']           = ($this->config->get('authorizenet_aim_simple_method') == 'capture') ? 'AUTH_CAPTURE' : 'AUTH_ONLY';
+					$data['x_card_num']       = str_replace(' ', '', $postdata['cc_number']);
+					$data['x_exp_date']       = $postdata['cc_expire_date_month'] . $postdata['cc_expire_date_year'];
+					$data['x_card_code']      = $postdata['cc_cvv2'];
+					$data['x_invoice_num']    = $order_id;
+					/* Customer Shipping Address Fields */
+					$data['x_ship_to_first_name'] = html_entity_decode($order_info['shipping_firstname'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_last_name']  = html_entity_decode($order_info['shipping_lastname'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_company']    = html_entity_decode($order_info['shipping_company'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_address']    = html_entity_decode($order_info['shipping_address_1'], ENT_QUOTES, 'UTF-8') . ' ' . html_entity_decode($order_info['shipping_address_2'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_city']       = html_entity_decode($order_info['shipping_city'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_state']      = html_entity_decode($order_info['shipping_zone'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_zip']        = html_entity_decode($order_info['shipping_postcode'], ENT_QUOTES, 'UTF-8');
+					$data['x_ship_to_country']    = html_entity_decode($order_info['shipping_country'], ENT_QUOTES, 'UTF-8');
+					if ($this->config->get('authorizenet_aim_simple_mode') == 'test') {
+						$data['x_test_request'] = 'true';
+					}
+					$curl = curl_init($url);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+					curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data, '', '&'));
+					$response = curl_exec($curl);
+					$success = "";
+					if (curl_error($curl)) {
+						$success = 'CURL ERROR: ' . curl_errno($curl) . '::' . curl_error($curl);
+						$this->log->write('AUTHNET AIM CURL ERROR: ' . curl_errno($curl) . '::' . curl_error($curl));	
+					} elseif ($response) {
+						$i = 1;
+						$response_info = array();
+						$results = explode(',', $response);
+						foreach ($results as $result) {
+							$response_info[$i] = trim($result, '"');
+							$i++;
+						}
+						if ($response_info[1] == '1') {
+							$order_status_id = $this->config->get('authorizenet_aim_simple_order_status_id');
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+							}
+							$message = '';
+							if (isset($response_info['5'])) {
+								$message .= 'Authorization Code: ' . $response_info['5'] . "\n";
+							}
+							if (isset($response_info['6'])) {
+								$message .= 'AVS Response: ' . $response_info['6'] . "\n";
+							}
+							if (isset($response_info['7'])) {
+								$message .= 'Transaction ID: ' . $response_info['7'] . "\n";
+							}
+							if (isset($response_info['39'])) {
+								$message .= 'Card Code Response: ' . $response_info['39'] . "\n";
+							}
+							if (isset($response_info['40'])) {
+								$message .= 'Cardholder Authentication Verification Response: ' . $response_info['40'] . "\n";
+							}
+							if (!$this->config->get('authorizenet_aim_simple_hash') || (strtoupper($response_info[38]) == strtoupper(md5($this->config->get('authorizenet_aim_simple_hash') . $this->config->get('authorizenet_aim_simple_login') . $response_info[7] . $this->currency->format($amt, $order_info['currency_code'], 1.00000, false))))) {
+								if (!isset($this->session->data['edit_order'])) {
+									$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+								} else {
+									$this->session->data['payment_message'] = $message;
+								}
+							}
+							$success = "success";
+						} else {
+							$success = $response_info[4];
+						}
+					} else {
+						$success = 'Empty Gateway Response';
+						$this->log->write('AUTHNET AIM CURL ERROR: Empty Gateway Response');
+					}
+					curl_close($curl);
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/eprocessingnetwork.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('eprocessingnetwork_server') == 'live') {
+						$url = 'https://www.eProcessingNetwork.Com/cgi-bin/tdbe/transact.pl';
+					} elseif ($this->config->get('eprocessingnetwork_server') == 'test') {
+						$url = 'https://www.eprocessingnetwork.com/cgi-bin/Reflect/transact.pl';	
+						$testEmail = $this->config->get('eprocessingnetwork_email');	
+					}
+					if ($this->config->get('eprocessingnetwork_type') == 'live') {
+						$useAccountAsCC = false;
+						$account = $this->config->get('eprocessingnetwork_account');
+						$key = $this->config->get('eprocessingnetwork_key');
+					} elseif ($this->config->get('eprocessingnetwork_type') == 'test') {			
+						$useAccountAsCC = true;
+						$account = '080880';
+						$key = 'yFqqXJh9Pqnugfr';	
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$data = array();
+					$data['ePNAccount'] = $account;
+					$data['FirstName'] = html_entity_decode($order_info['payment_firstname'], ENT_QUOTES, 'UTF-8');
+					$data['LastName'] = html_entity_decode($order_info['payment_lastname'], ENT_QUOTES, 'UTF-8');
+					$data['Company'] = html_entity_decode($order_info['payment_company'], ENT_QUOTES, 'UTF-8');
+					$data['Address'] = html_entity_decode($order_info['payment_address_1'], ENT_QUOTES, 'UTF-8');
+					$data['City'] = html_entity_decode($order_info['payment_city'], ENT_QUOTES, 'UTF-8');
+					$data['State'] = html_entity_decode($order_info['payment_zone'], ENT_QUOTES, 'UTF-8');
+					$data['Zip'] = html_entity_decode($order_info['payment_postcode'], ENT_QUOTES, 'UTF-8');
+					if (isset($testEmail) && !empty($testEmail)) {
+						$data['email'] = $testEmail;
+					}
+					if ($useAccountAsCC) {
+						$data['CardNo'] = $account;
+						if ($this->config->get('eprocessingnetwork_test_result') == '1') {
+							$data['Total'] = 100.00;
+						} else {
+							$data['Total'] = 100.01;
+						}
+					} else {
+						$data['CardNo'] = str_replace(' ', '', $postdata['cc_number']);
+						$data['Total'] = $this->currency->format($order_info['total'], $order_info['currency_code'], 1.00000, FALSE);
+					}
+					$data['ExpMonth'] = $postdata['cc_expire_date_month'];
+					$data['ExpYear'] = $postdata['cc_expire_date_year'];
+					$data['CVV2'] = $postdata['cc_cvv2'];
+					$data['CVV2Type'] = '1';
+					$data['HTML'] = 'No';
+					if (!empty($key)) {
+						$data['RestrictKey'] = $key;
+					}
+					$data['Inv'] = $this->session->data['order_id'];
+					$curl = curl_init($url);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
+					$response = curl_exec($curl);
+					curl_close($curl);
+					$i = 0;
+					$response_data = array();
+					$results = explode(',', $response);
+					foreach ($results as $result) {
+						$response_data[$i] = trim($result, '"');
+						$i++;
+					}
+					$success = "";
+					if (substr($response_data[0],0,1) == 'Y') {
+						$order_status_id = $this->config->get('config_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';			
+						$message .= 'Authorization Code: ' . substr($response_data[0],strpos($response_data[0]," ")+1) . "\n";
+						if (isset($response_data['1'])) {
+							$message .= 'AVS Response: ' . $response_data['1'] . "\n";
+						}
+						if (isset($response_data['2'])) {
+							$message .= 'CVV2 Response: ' . $response_data['2'] . "\n";
+						}
+						if (isset($response_data['3'])) {
+							$message .= 'Invoice Number: ' . $response_data['3'] . "\n";
+						}
+						if (isset($response_data['4'])) {
+							$message .= 'Transaction ID: ' . $response_data['4'] . "\n";
+						}
+						$message .= 'Name On Card: ' . $this->request->post['cc_owner'] . "\n";
+						$message .= 'Exp Date: ' . $this->request->post['cc_expire_date_month'] . '/' . $this->request->post['cc_expire_date_year'] . "\n";
+						$message .= 'Last-4 Digits: ' . substr(str_replace(' ', '', $this->request->post['cc_number']), -4) . "\n";
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $this->config->get('eprocessingnetwork_order_status_success_id'), $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else if (substr($response_data[0],0,1) == 'U') {
+						$success = $response_data[0];
+					} else {
+						if ($this->config->get('eprocessingnetwork_server') == 'live') {
+							$success = $response_data[1];
+						} elseif ($this->config->get('eprocessingnetwork_server') == 'test') {
+							if ($this->config->get('eprocessingnetwork_test_result') == '1') {
+								error_reporting(0);
+								$this->model_checkout_order->confirm($this->session->data['order_id'], $this->config->get('config_order_status_id'));
+								$message = 'This was a test order. No credit card authorization details are available.';
+								$this->model_checkout_order->update($this->session->data['order_id'], $this->config->get('eprocessingnetwork_order_status_success_id'), $message, FALSE);
+								$success = "success";
+							} else {
+								$success = 'Testing mode. Transaction reflection sent to Test E-mail Recipient.';
+							}
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/intuit_qbms.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('intuit_qbms_server') == 'live') {
+						$url = 'https://merchantaccount.quickbooks.com/j/AppGateway';
+						$AppID = $this->config->get('intuit_qbms_application_id');
+						$ApplicationLogin = $this->config->get('intuit_qbms_application_login');
+						$ConnectionTicket = $this->config->get('intuit_qbms_connection_ticket');
+					} elseif ($this->config->get('intuit_qbms_server') == 'test') {
+						$url = 'https://merchantaccount.ptc.quickbooks.com/j/AppGateway';
+						$AppID = $this->config->get('intuit_qbms_test_application_id');
+						$ApplicationLogin = $this->config->get('intuit_qbms_test_application_login');
+						$ConnectionTicket = $this->config->get('intuit_qbms_test_connection_ticket'); 		
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$TransactionRequestID = $order_id;
+					$CreditCardNumber = str_replace(' ', '', $postdata['cc_number']);
+					$ExpirationMonth = $postdata['cc_expire_date_month'];
+					$ExpirationYear = $postdata['cc_expire_date_year'];
+					$IsCardPresent = 'false';
+					$IsECommerce = 'true';
+					$IsRecurring = 'false';
+					$Track2Data = '';
+					$Amount = $this->currency->format($order_info['total'], $order_info['currency_code'], false, false)	;
+					$NameOnCard =  $postdata['cc_owner'];
+					$CreditCardAddress =  $order_info['payment_address_1'];
+					$CreditCardPostalCode = $order_info['payment_postcode'];
+					$CommercialCardCode = '';
+					$CardSecurityCode = $postdata['cc_cvv2'];
+					$BatchID = '';
+					$UserID = $order_info['email'];
+					$qbmsCall = '<?xml version="1.0" ?>
+								<?qbmsxml version="4.5"?>
+								<QBMSXML>
+									<SignonMsgsRq>
+										<SignonDesktopRq>
+										   <ClientDateTime>' . date("Y-m-d H:i:s",time()) .'</ClientDateTime>
+										   <ApplicationLogin>'.$ApplicationLogin .'</ApplicationLogin>
+										   <ConnectionTicket>'.$ConnectionTicket .'</ConnectionTicket>
+										   <Language>English</Language>
+										   <AppID> '.$AppID .'</AppID>
+										   <AppVer>1.0</AppVer>
+										</SignonDesktopRq>
+									</SignonMsgsRq>			  	
+									<QBMSXMLMsgsRq>
+										<CustomerCreditCardChargeRq requestID="24909">
+											<TransRequestID>'.date('YmdTHis')."-".$TransactionRequestID.'</TransRequestID><!-- required -->
+											<!-- BEGIN OR -->
+											<CreditCardNumber >'.$CreditCardNumber.'</CreditCardNumber> <!-- optional -->
+											<ExpirationMonth >'.$ExpirationMonth.'</ExpirationMonth> <!-- required -->
+											<ExpirationYear >'.$ExpirationYear.'</ExpirationYear> <!-- required -->
+											<IsCardPresent >'.$IsCardPresent.'</IsCardPresent> <!-- optional -->
+											<Amount >'.$Amount.'</Amount> <!-- required -->
+											<NameOnCard >'.$NameOnCard.'</NameOnCard> <!-- optional -->
+											<CreditCardAddress >'.$CreditCardAddress.'</CreditCardAddress> <!-- optional -->
+											<CreditCardPostalCode >'.$CreditCardPostalCode.'</CreditCardPostalCode> <!-- optional -->
+											<CommercialCardCode >'.$CommercialCardCode.'</CommercialCardCode> <!-- optional -->
+											<CardSecurityCode >'.$CardSecurityCode.'</CardSecurityCode> <!-- optional -->			
+											<BatchID >'.$BatchID.'</BatchID> <!-- optional -->
+											<InvoiceID >'.$TransactionRequestID.'</InvoiceID> <!-- optional -->
+											<UserID >'.$UserID.'</UserID> <!-- optional -->
+											<Comment >Online: '.$TransactionRequestID.'</Comment> <!-- optional -->
+										</CustomerCreditCardChargeRq>
+									</QBMSXMLMsgsRq>
+								</QBMSXML>';
+					$PHP_Header[] = "Content-type: application/x-qbmsxml";
+					$PHP_Header[] = "Content-length: ".strlen($qbmsCall);
+					$curl = curl_init($url);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+					curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, $PHP_Header);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, $qbmsCall);
+					curl_setopt($curl, CURLOPT_VERBOSE, 1);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					$response = curl_exec($curl);
+					curl_close($curl);
+					$success = "";
+					$xml = new SimpleXMLElement($response);
+					$statuscode = $xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->attributes()->statusCode;
+					$statusmess = $xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->attributes()->statusMessage;
+					if ($statuscode=='0') {
+						$order_status_id = $this->config->get('config_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';			
+						$message .= 'Response Code: ' . (string)$statuscode . "\n";
+						$message .= 'Response Text: ' . (string)$statusmess . "\n";
+						if (isset($xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AuthorizationCode)) {
+							$message .= 'Authorization Code: ' . (string)$xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AuthorizationCode . "\n";
+						}
+						if (isset($xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AVSStreet)) {
+							$message .= 'AVS Street Code: ' . (string)$xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AVSStreet . "\n";
+						}
+						if (isset($xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AVSZip)) {
+							$message .= 'AVS Zip Code: ' . (string)$xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->AVSZip . "\n";
+						}
+						if (isset($xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->CardSecurityCodeMatch)) {
+							$message .= 'CVV Result Code: ' . (string)$xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->CardSecurityCodeMatch . "\n";
+						}
+						if (isset($xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->CreditCardTransID)) {
+							$message .= 'Transaction ID : ' . (string)$xml->QBMSXMLMsgsRs->CustomerCreditCardChargeRs[0]->CreditCardTransID . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $this->config->get('intuit_qbms_order_status_id'), $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						$success = (string)$statusmess;
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/invoice.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function confirm($order_id, $notify = false) {
+					$this->language->load('oentrypayment/invoice');
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$tilausnumero = $order_id;
+					if( $tilausnumero < 10 ) {
+						$tilausnumero *= 1000;
+					}
+					elseif( $tilausnumero < 100 ) {
+						$tilausnumero *= 100;
+					}
+					elseif( $tilausnumero < 1000 ) {
+						$tilausnumero *= 10;
+					}
+					$kertoimet = array(7,3,1);
+					$pituus = strlen($tilausnumero);
+					$summa = 0;
+					$viite = str_split($tilausnumero);
+					for ($i = $pituus - 1; $i >= 0; --$i) {
+						$summa += $viite[$i] * $kertoimet[($pituus - 1 - $i) % 3];
+					}
+					$tarkiste = (10 - $summa % 10) % 10;
+					$fiviite = $tilausnumero . $tarkiste;
+					$rf_siemen = $tilausnumero . $tarkiste . 271500;
+					$jakoj = $rf_siemen % 97;
+					$rftarkiste = 98 - $jakoj;
+					if ($rftarkiste < 10) {
+						$rftarkiste = "0" . $rftarkiste;
+					}
+					$rfviite = 'RF' . $rftarkiste . $fiviite;
+					if ($this->session->data['payment_country_id'] == '72') {
+						$ref_number = $fiviite;
+					} else {
+						$ref_number = $rfviite;
+					}
+					$duetime = mktime(0,0,0,date("m"),date("d")+$this->config->get('invoice_due'),date("Y"));
+					$comment  = $this->config->get('invoice_instructions_' . $this->config->get('config_language_id')) . "\n\n";
+					$comment .= "<strong>" . $this->language->get('text_iban') . ": " . $this->config->get('invoice_iban') . "</strong>\n";
+					$comment .= "<strong>" . $this->language->get('text_ref') . ": " . $ref_number . "</strong> " . "\n";
+					$comment .= "<strong>" . $this->language->get('text_due') . ": " . date("d.m.Y", $duetime) . "</strong>\n\n";
+					//$comment .= $this->config->get('invoice_bank_' . $this->config->get('config_language_id')) . "\n\n";
+					$comment .= $this->language->get('text_payment');
+					$order_status_id = $this->config->get('invoice_order_status_id');
+					if (!isset($this->session->data['edit_order'])) {
+						if (isset($this->session->data['customer_info'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						} else {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment);
+						}
+					} else {
+						$this->model_sale_order_entry->invoiceConfirm($order_id, $order_status_id, $comment, $notify);
+						$this->session->data['payment_message'] = $comment;
+					}
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/moneris_api.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total = false) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$classname = "moneris_api";
+					$store_url = ($this->config->get('config_ssl') ? (is_numeric($this->config->get('config_ssl'))) ? str_replace('http', 'https', $this->config->get('config_url')) : $this->config->get('config_ssl') : $this->config->get('config_url'));
+					$this->data = array_merge($this->data, $this->load->language('oentrypayment/' . $classname));
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					if (isset($order_info['currency_code'])) { $order_info['currency'] = $order_info['currency_code']; }
+					if (isset($order_info['currency_value'])) { $order_info['value'] = $order_info['currency_value']; }
+					$supported_currencies = array('AUD','CAD','EUR','GBP','HKD','JPY','USD');
+					if (in_array($order_info['currency'], $supported_currencies)) {
+						$currency = $order_info['currency'];
+					} else {
+						$currency = 'USD';
+					}
+					$data['ExpiryDateMonth'] = $postdata['cc_expire_date_month'];
+					$data['ExpiryDateYear'] = substr($postdata['cc_expire_date_year'],2);
+					$data['StartDateMonth'] = $postdata['cc_start_date_month'];
+					$data['StartDateYear'] = substr($postdata['cc_start_date_year'],2);
+					$data['IssueNumber'] = $postdata['cc_issue'];
+					$data['CV2'] = $postdata['cc_cvv2'];
+					$ccname 		= (isset($postdata['cc_owner'])) ? $postdata['cc_owner'] : '';
+					$ccnum 			= (isset($postdata['cc_number'])) ? $postdata['cc_number'] : '';
+					$ccmon 			= (isset($postdata['cc_expire_date_month'])) ? $postdata['cc_expire_date_month'] : '';
+					$ccyear 		= (isset($postdata['cc_expire_date_year'])) ? substr($postdata['cc_expire_date_year'],2) : '';
+					$cccvv 			= (isset($postdata['cc_cvv2'])) ? $postdata['cc_cvv2'] : '';
+					$ccissue 		= (isset($postdata['cc_issue'])) ? $postdata['cc_issue'] : '';
+					$ccstart 		= (isset($postdata['cc_start_date_month'])) ? $postdata['cc_start_date_month'] . '/' . $postdata['cc_start_date_year'] : '';
+					$cctype 		= (isset($postdata['cc_type'])) ? $postdata['cc_type'] : '';
+					$store_id 		= $this->config->get($classname . '_mid');
+					$api_token 		= $this->config->get($classname . '_key');
+					$orderId 		= $order_id;
+					$custId 		= $order_info['customer_id'];
+					$amount 		= $this->currency->format($order_info['total'], $currency, FALSE, FALSE);
+					$crypt			= '7';
+					if ($this->config->get($classname . '_country') == 'US') {
+						require DIR_SYSTEM . 'library/payment/moneris/mpgClasses_us.php';
+						$txnArray=array(
+							'type'					=> 'us_purchase',
+							'order_id'				=> $orderId . '_' . time(),
+							'cust_id'				=> $custId,
+							'amount'				=> $amount,
+							'pan'					=> $ccnum,
+							'expdate'				=> ($ccyear.$ccmon),
+							'crypt_type'			=> $crypt,
+							'commcard_invoice'		=> '',
+							'commcard_tax_amount'	=> '0.00'
+						);
+					} else {
+						require DIR_SYSTEM . 'library/payment/moneris/mpgClasses.php';
+						$txnArray=array(
+							'type'					=> 'purchase',
+							'order_id'				=> $orderId . '_' . time(),
+							'cust_id'				=> $custId,
+							'amount'				=> $amount,
+							'pan'					=> $ccnum,
+							'expdate'				=> ($ccyear.$ccmon),
+							'crypt_type'			=> $crypt
+						);
+					}
+					$billing = array (
+						'first_name' 		=> $order_info['payment_firstname'],
+						'last_name'			=> $order_info['payment_lastname'],
+						'company_name'		=> $order_info['payment_lastname'],
+						'address'			=> trim($order_info['payment_address_1'] . ' ' . $order_info['payment_address_2']),
+						'city'				=> $order_info['payment_city'],
+						'province'			=> $order_info['payment_zone'],
+						'postal_code'		=> $order_info['payment_postcode'],
+						'country'			=> $order_info['payment_iso_code_2'],
+						'phone_number'		=> $order_info['telephone'],
+						'fax'				=> $order_info['fax'],
+						'tax1'				=> 0,
+						'tax2'				=> 0,
+						'tax3'				=> 0,
+						'shipping_cost'		=> 0
+					);
+					$shipping = array (
+						'first_name' 		=> $order_info['shipping_firstname'],
+						'last_name'			=> $order_info['shipping_lastname'],
+						'company_name'		=> $order_info['shipping_lastname'],
+						'address'			=> trim($order_info['shipping_address_1'] . ' ' . $order_info['shipping_address_2']),
+						'city'				=> $order_info['shipping_city'],
+						'province'			=> $order_info['shipping_zone'],
+						'postal_code'		=> $order_info['shipping_postcode'],
+						'country'			=> $order_info['shipping_iso_code_2'],
+						'phone_number'		=> $order_info['telephone'],
+						'fax'				=> $order_info['fax'],
+						'tax1'				=> 0,
+						'tax2'				=> 0,
+						'tax3'				=> 0,
+						'shipping_cost'		=> 0
+					);
+					$avsArray = array(
+						'avs_street_number' => preg_replace("/[^\d]/", "", $order_info['payment_address_1']),
+						'avs_street_name'	=> trim(preg_replace("/[\d]/", "", $order_info['payment_address_1'])),
+						'avs_zipcode' 		=> $order_info['payment_postcode']
+					);
+					$cvdArray = array(
+						'cvd_indicator' => '1',
+						'cvd_value' => $cccvv
+					);
+					$mpgCustInfo = new mpgCustInfo();
+					$mpgCustInfo->setEmail($order_info['email']);
+					$mpgCustInfo->setInstructions('');
+					$itemArray = array(
+						'name' => 'Store Purchase',
+						'quantity' => '1',
+						'product_code' => '---',
+						'extended_amount' => '0.00'
+					);
+					$mpgCustInfo->setItems($itemArray);
+					$mpgCustInfo->setBilling($billing);
+					$mpgCustInfo->setShipping($shipping);
+					$mpgTxn 		= new mpgTransaction($txnArray);
+					$mpgTxn->setCustInfo($mpgCustInfo);
+					if ($this->config->get($classname . '_efraud')) {
+						$mpgTxn->setCvdInfo($cvdArray);
+						$mpgTxn->setAvsInfo($avsArray);
+					}
+					$mpgRequest 	= new mpgRequest($mpgTxn);
+					$mpgHttpPost  	= new mpgHttpsPost($store_id,$api_token,$mpgRequest, DIR_LOGS . $classname . '_raw_debug.txt');
+					$mpgResponse	= $mpgHttpPost->getMpgResponse();
+					$responseCode	= $mpgResponse->getResponseCode();
+					if ($this->config->get($classname . '_debug')) {
+						file_put_contents(DIR_LOGS . $classname . '_debug.txt', "mpgResponse = " . print_r($mpgResponse,1) . "\r\n responseCode = $responseCode \r\n----------------\r\n", FILE_APPEND);
+					}
+					$json = array();
+					$success = "";
+					$message = '';
+					if (!$responseCode || $responseCode == 'null') {
+						$success = (isset($this->session->data['error']) ? $this->session->data['error'] : 'Gateway Error');
+					}
+					if (!$success) {
+						if ((int)$responseCode < 50) {
+							unset($this->session->data['ccname']);
+							unset($this->session->data['ccnum']);
+							unset($this->session->data['ccmon']);
+							unset($this->session->data['ccyear']);
+							unset($this->session->data['cccvv']);
+							unset($this->session->data['ccissue']);
+							unset($this->session->data['ccstart']);
+							unset($this->session->data['cctype']);
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->confirm($order_id, $this->config->get($classname . '_order_status_id'), $comment, $notify);
+								$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+							}
+							$success = "success";
+						} else {
+							if ($this->language->get('error_' . $responseCode) != ('error_' . $responseCode)) {
+								$success = $this->language->get('error_' . $responseCode);
+							} else {
+								$success = ($responseCode . '::' . $mpgResponse->getMessage());
+							}
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$classname = "moneris_api";
+					$store_url = ($this->config->get('config_ssl') ? (is_numeric($this->config->get('config_ssl'))) ? str_replace('http', 'https', $this->config->get('config_url')) : $this->config->get('config_ssl') : $this->config->get('config_url'));
+					$this->data = array_merge($this->data, $this->load->language('oentrypayment/' . $classname));
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					if (isset($order_info['currency_code'])) { $order_info['currency'] = $order_info['currency_code']; }
+					if (isset($order_info['currency_value'])) { $order_info['value'] = $order_info['currency_value']; }
+					$supported_currencies = array('AUD','CAD','EUR','GBP','HKD','JPY','USD');
+					if (in_array($order_info['currency'], $supported_currencies)) {
+						$currency = $order_info['currency'];
+					} else {
+						$currency = 'USD';
+					}
+					$data['ExpiryDateMonth'] = $postdata['cc_expire_date_month'];
+					$data['ExpiryDateYear'] = substr($postdata['cc_expire_date_year'],2);
+					$data['StartDateMonth'] = $postdata['cc_start_date_month'];
+					$data['StartDateYear'] = substr($postdata['cc_start_date_year'],2);
+					$data['IssueNumber'] = $postdata['cc_issue'];
+					$data['CV2'] = $postdata['cc_cvv2'];
+					$ccname 		= (isset($postdata['cc_owner'])) ? $postdata['cc_owner'] : '';
+					$ccnum 			= (isset($postdata['cc_number'])) ? $postdata['cc_number'] : '';
+					$ccmon 			= (isset($postdata['cc_expire_date_month'])) ? $postdata['cc_expire_date_month'] : '';
+					$ccyear 		= (isset($postdata['cc_expire_date_year'])) ? substr($postdata['cc_expire_date_year'],2) : '';
+					$cccvv 			= (isset($postdata['cc_cvv2'])) ? $postdata['cc_cvv2'] : '';
+					$ccissue 		= (isset($postdata['cc_issue'])) ? $postdata['cc_issue'] : '';
+					$ccstart 		= (isset($postdata['cc_start_date_month'])) ? $postdata['cc_start_date_month'] . '/' . $postdata['cc_start_date_year'] : '';
+					$cctype 		= (isset($postdata['cc_type'])) ? $postdata['cc_type'] : '';
+					$store_id 		= $this->config->get($classname . '_mid');
+					$api_token 		= $this->config->get($classname . '_key');
+					$orderId 		= $order_id;
+					$custId 		= $order_info['customer_id'];
+					$amount 		= $this->currency->format($order_info['total'], $currency, FALSE, FALSE);
+					$crypt			= '7';
+					if ($this->config->get($classname . '_country') == 'US') {
+						require DIR_SYSTEM . 'library/payment/moneris/mpgClasses_us.php';
+						$txnArray=array(
+							'type'					=> 'us_purchase',
+							'order_id'				=> $orderId . '_' . time(),
+							'cust_id'				=> $custId,
+							'amount'				=> $amount,
+							'pan'					=> $ccnum,
+							'expdate'				=> ($ccyear.$ccmon),
+							'crypt_type'			=> $crypt,
+							'commcard_invoice'		=> '',
+							'commcard_tax_amount'	=> '0.00'
+						);
+					} else {
+						require DIR_SYSTEM . 'library/payment/moneris/mpgClasses.php';
+						$txnArray=array(
+							'type'					=> 'purchase',
+							'order_id'				=> $orderId . '_' . time(),
+							'cust_id'				=> $custId,
+							'amount'				=> $amount,
+							'pan'					=> $ccnum,
+							'expdate'				=> ($ccyear.$ccmon),
+							'crypt_type'			=> $crypt
+						);
+					}
+					$billing = array (
+						'first_name' 		=> $order_info['payment_firstname'],
+						'last_name'			=> $order_info['payment_lastname'],
+						'company_name'		=> $order_info['payment_lastname'],
+						'address'			=> trim($order_info['payment_address_1'] . ' ' . $order_info['payment_address_2']),
+						'city'				=> $order_info['payment_city'],
+						'province'			=> $order_info['payment_zone'],
+						'postal_code'		=> $order_info['payment_postcode'],
+						'country'			=> $order_info['payment_iso_code_2'],
+						'phone_number'		=> $order_info['telephone'],
+						'fax'				=> $order_info['fax'],
+						'tax1'				=> 0,
+						'tax2'				=> 0,
+						'tax3'				=> 0,
+						'shipping_cost'		=> 0
+					);
+					$shipping = array (
+						'first_name' 		=> $order_info['shipping_firstname'],
+						'last_name'			=> $order_info['shipping_lastname'],
+						'company_name'		=> $order_info['shipping_lastname'],
+						'address'			=> trim($order_info['shipping_address_1'] . ' ' . $order_info['shipping_address_2']),
+						'city'				=> $order_info['shipping_city'],
+						'province'			=> $order_info['shipping_zone'],
+						'postal_code'		=> $order_info['shipping_postcode'],
+						'country'			=> $order_info['shipping_iso_code_2'],
+						'phone_number'		=> $order_info['telephone'],
+						'fax'				=> $order_info['fax'],
+						'tax1'				=> 0,
+						'tax2'				=> 0,
+						'tax3'				=> 0,
+						'shipping_cost'		=> 0
+					);
+					$avsArray = array(
+						'avs_street_number' => preg_replace("/[^\d]/", "", $order_info['payment_address_1']),
+						'avs_street_name'	=> trim(preg_replace("/[\d]/", "", $order_info['payment_address_1'])),
+						'avs_zipcode' 		=> $order_info['payment_postcode']
+					);
+					$cvdArray = array(
+						'cvd_indicator' => '1',
+						'cvd_value' => $cccvv
+					);
+					$mpgCustInfo = new mpgCustInfo();
+					$mpgCustInfo->setEmail($order_info['email']);
+					$mpgCustInfo->setInstructions('');
+					$itemArray = array(
+						'name' => 'Store Purchase',
+						'quantity' => '1',
+						'product_code' => '---',
+						'extended_amount' => '0.00'
+					);
+					$mpgCustInfo->setItems($itemArray);
+					$mpgCustInfo->setBilling($billing);
+					$mpgCustInfo->setShipping($shipping);
+					$mpgTxn 		= new mpgTransaction($txnArray);
+					$mpgTxn->setCustInfo($mpgCustInfo);
+					if ($this->config->get($classname . '_efraud')) {
+						$mpgTxn->setCvdInfo($cvdArray);
+						$mpgTxn->setAvsInfo($avsArray);
+					}
+					$mpgRequest 	= new mpgRequest($mpgTxn);
+					$mpgHttpPost  	= new mpgHttpsPost($store_id,$api_token,$mpgRequest, DIR_LOGS . $classname . '_raw_debug.txt');
+					$mpgResponse	= $mpgHttpPost->getMpgResponse();
+					$responseCode	= $mpgResponse->getResponseCode();
+					if ($this->config->get($classname . '_debug')) {
+						file_put_contents(DIR_LOGS . $classname . '_debug.txt', "mpgResponse = " . print_r($mpgResponse,1) . "\r\n responseCode = $responseCode \r\n----------------\r\n", FILE_APPEND);
+					}
+					$json = array();
+					$success = "";
+					$message = '';
+					if (!$responseCode || $responseCode == 'null') {
+						$success = (isset($this->session->data['error']) ? $this->session->data['error'] : 'Gateway Error');
+					}
+					if (!$success) {
+						if ((int)$responseCode < 50) {
+							unset($this->session->data['ccname']);
+							unset($this->session->data['ccnum']);
+							unset($this->session->data['ccmon']);
+							unset($this->session->data['ccyear']);
+							unset($this->session->data['cccvv']);
+							unset($this->session->data['ccissue']);
+							unset($this->session->data['ccstart']);
+							unset($this->session->data['cctype']);
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->confirm($order_id, $this->config->get($classname . '_order_status_id'), $comment, $notify);
+								$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+							}
+							$success = "success";
+						} else {
+							if ($this->language->get('error_' . $responseCode) != ('error_' . $responseCode)) {
+								$success = $this->language->get('error_' . $responseCode);
+							} else {
+								$success = ($responseCode . '::' . $mpgResponse->getMessage());
+							}
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+		<operation error="skip">
+			<search position="replace"><![CDATA[
+				$name = basename(__FILE__, '.php');
+			]]></search>
+			<add><![CDATA[
+				$name = str_replace('vq2-catalog_model_payment_', '', basename(__FILE__, '.php'));
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/paymentsense_direct.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$country_codes = array(
+						'Afghanistan'=>'4',
+						'Albania'=>'8',
+						'Algeria'=>'12',
+						'American Samoa'=>'16',
+						'Andorra'=>'20',
+						'Angola'=>'24',
+						'Anguilla'=>'660',
+						'Antarctica'=>'',
+						'Antigua and Barbuda'=>'28',
+						'Argentina'=>'32',
+						'Armenia'=>'51',
+						'Aruba'=>'533',
+						'Australia'=>'36',
+						'Austria'=>'40',
+						'Azerbaijan'=>'31',
+						'Bahamas'=>'44',
+						'Bahrain'=>'48',
+						'Bangladesh'=>'50',
+						'Barbados'=>'52',
+						'Belarus'=>'112',
+						'Belgium'=>'56',
+						'Belize'=>'84',
+						'Benin'=>'204',
+						'Bermuda'=>'60',
+						'Bhutan'=>'64',
+						'Bolivia'=>'68',
+						'Bosnia and Herzegowina'=>'70',
+						'Botswana'=>'72',
+						'Brazil'=>'76',
+						'Brunei Darussalam'=>'96',
+						'Bulgaria'=>'100',
+						'Burkina Faso'=>'854',
+						'Burundi'=>'108',
+						'Cambodia'=>'116',
+						'Cameroon'=>'120',
+						'Canada'=>'124',
+						'Cape Verde'=>'132',
+						'Cayman Islands'=>'136',
+						'Central African Republic'=>'140',
+						'Chad'=>'148',
+						'Chile'=>'152',
+						'China'=>'156',
+						'Colombia'=>'170',
+						'Comoros'=>'174',
+						'Congo'=>'178',
+						'Cook Islands'=>'180',
+						'Costa Rica'=>'184',
+						'Cote D\'Ivoire'=>'188',
+						'Croatia'=>'384',
+						'Cuba'=>'191',
+						'Cyprus'=>'192',
+						'Czech Republic'=>'196',
+						'Democratic Republic of Congo'=>'203',
+						'Denmark'=>'208',
+						'Djibouti'=>'262',
+						'Dominica'=>'212',
+						'Dominican Republic'=>'214',
+						'Ecuador'=>'218',
+						'Egypt'=>'818',
+						'El Salvador'=>'222',
+						'Equatorial Guinea'=>'226',
+						'Eritrea'=>'232',
+						'Estonia'=>'233',
+						'Ethiopia'=>'231',
+						'Falkland Islands (Malvinas)'=>'238',
+						'Faroe Islands'=>'234',
+						'Fiji'=>'242',
+						'Finland'=>'246',
+						'France'=>'250',
+						'French Guiana'=>'254',
+						'French Polynesia'=>'258',
+						'French Southern Territories'=>'',
+						'Gabon'=>'266',
+						'Gambia'=>'270',
+						'Georgia'=>'268',
+						'Germany'=>'276',
+						'Ghana'=>'288',
+						'Gibraltar'=>'292',
+						'Greece'=>'300',
+						'Greenland'=>'304',
+						'Grenada'=>'308',
+						'Guadeloupe'=>'312',
+						'Guam'=>'316',
+						'Guatemala'=>'320',
+						'Guinea'=>'324',
+						'Guinea-bissau'=>'624',
+						'Guyana'=>'328',
+						'Haiti'=>'332',
+						'Honduras'=>'340',
+						'Hong Kong'=>'344',
+						'Hungary'=>'348',
+						'Iceland'=>'352',
+						'India'=>'356',
+						'Indonesia'=>'360',
+						'Iran (Islamic Republic of)'=>'364',
+						'Iraq'=>'368',
+						'Ireland'=>'372',
+						'Israel'=>'376',
+						'Italy'=>'380',
+						'Jamaica'=>'388',
+						'Japan'=>'392',
+						'Jordan'=>'400',
+						'Kazakhstan'=>'398',
+						'Kenya'=>'404',
+						'Kiribati'=>'296',
+						'Korea, Republic of'=>'410',
+						'Kuwait'=>'414',
+						'Kyrgyzstan'=>'417',
+						'Lao People\'s Democratic Republic'=>'418',
+						'Latvia'=>'428',
+						'Lebanon'=>'422',
+						'Lesotho'=>'426',
+						'Liberia'=>'430',
+						'Libyan Arab Jamahiriya'=>'434',
+						'Liechtenstein'=>'438',
+						'Lithuania'=>'440',
+						'Luxembourg'=>'442',
+						'Macau'=>'446',
+						'Macedonia'=>'807',
+						'Madagascar'=>'450',
+						'Malawi'=>'454',
+						'Malaysia'=>'458',
+						'Maldives'=>'462',
+						'Mali'=>'466',
+						'Malta'=>'470',
+						'Marshall Islands'=>'584',
+						'Martinique'=>'474',
+						'Mauritania'=>'478',
+						'Mauritius'=>'480',
+						'Mexico'=>'484',
+						'Micronesia, Federated States of'=>'583',
+						'Moldova, Republic of'=>'498',
+						'Monaco'=>'492',
+						'Mongolia'=>'496',
+						'Montserrat'=>'500',
+						'Morocco'=>'504',
+						'Mozambique'=>'508',
+						'Myanmar'=>'104',
+						'Namibia'=>'516',
+						'Nauru'=>'520',
+						'Nepal'=>'524',
+						'Netherlands'=>'528',
+						'Netherlands Antilles'=>'530',
+						'New Caledonia'=>'540',
+						'New Zealand'=>'554',
+						'Nicaragua'=>'558',
+						'Niger'=>'562',
+						'Nigeria'=>'566',
+						'Niue'=>'570',
+						'Norfolk Island'=>'574',
+						'Northern Mariana Islands'=>'580',
+						'Norway'=>'578',
+						'Oman'=>'512',
+						'Pakistan'=>'586',
+						'Palau'=>'585',
+						'Panama'=>'591',
+						'Papua New Guinea'=>'598',
+						'Paraguay'=>'600',
+						'Peru'=>'604',
+						'Philippines'=>'608',
+						'Pitcairn'=>'612',
+						'Poland'=>'616',
+						'Portugal'=>'620',
+						'Puerto Rico'=>'630',
+						'Qatar'=>'634',
+						'Reunion'=>'638',
+						'Romania'=>'642',
+						'Russian Federation'=>'643',
+						'Rwanda'=>'646',
+						'Saint Kitts and Nevis'=>'659',
+						'Saint Lucia'=>'662',
+						'Saint Vincent and the Grenadines'=>'670',
+						'Samoa'=>'882',
+						'San Marino'=>'674',
+						'Sao Tome and Principe'=>'678',
+						'Saudi Arabia'=>'682',
+						'Senegal'=>'686',
+						'Seychelles'=>'690',
+						'Sierra Leone'=>'694',
+						'Singapore'=>'702',
+						'Slovak Republic'=>'703',
+						'Slovenia'=>'705',
+						'Solomon Islands'=>'90',
+						'Somalia'=>'706',
+						'South Africa'=>'710',
+						'Spain'=>'724',
+						'Sri Lanka'=>'144',
+						'Sudan'=>'736',
+						'Suriname'=>'740',
+						'Svalbard and Jan Mayen Islands'=>'744',
+						'Swaziland'=>'748',
+						'Sweden'=>'752',
+						'Switzerland'=>'756',
+						'Syrian Arab Republic'=>'760',
+						'Taiwan'=>'158',
+						'Tajikistan'=>'762',
+						'Tanzania, United Republic of'=>'834',
+						'Thailand'=>'764',
+						'Togo'=>'768',
+						'Tokelau'=>'772',
+						'Tonga'=>'776',
+						'Trinidad and Tobago'=>'780',
+						'Tunisia'=>'788',
+						'Turkey'=>'792',
+						'Turkmenistan'=>'795',
+						'Turks and Caicos Islands'=>'796',
+						'Tuvalu'=>'798',
+						'Uganda'=>'800',
+						'Ukraine'=>'804',
+						'United Arab Emirates'=>'784',
+						'United Kingdom'=>'826',
+						'United States'=>'840',
+						'Uruguay'=>'858',
+						'Uzbekistan'=>'860',
+						'Vanuatu'=>'548',
+						'Vatican City State (Holy See)'=>'336',
+						'Venezuela'=>'862',
+						'Viet Nam'=>'704',
+						'Virgin Islands (British)'=>'92',
+						'Virgin Islands (U.S.)'=>'850',
+						'Wallis and Futuna Islands'=>'876',
+						'Western Sahara'=>'732',
+						'Yemen'=>'887',
+						'Zambia'=>'894',
+						'Zimbabwe'=>'716'
+						);
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$data = array();
+					if (in_array($order_info['payment_country'], array_keys($country_codes))) {
+						$order_country = $country_codes[$order_info['payment_country']];
+					} else {
+						$order_country = '';
+					}
+					$data['OrderID'] = $order_id;
+					$data['MerchantID'] = $this->config->get('paymentsense_direct_mid');
+					$data['MerchantPassword'] = $this->config->get('paymentsense_direct_pass');
+					$amt = $order_info['total'];
+					$data['Amount'] = round($amt,2)*100;
+					$data['Currency'] = 826;
+					$data['TransactionType'] = $this->config->get('paymentsense_direct_type');		
+					$data['Description'] = "Order ID: ". $data['OrderID'];
+					$data['CardName'] = $postdata['cc_owner'];
+					$data['CardNumber'] = $postdata['cc_number'];
+					$data['ExpiryDateMonth'] = $postdata['cc_expire_date_month'];
+					$data['ExpiryDateYear'] = substr($postdata['cc_expire_date_year'],2);
+					$data['StartDateMonth'] = $postdata['cc_start_date_month'];
+					$data['StartDateYear'] = substr($postdata['cc_start_date_year'],2);
+					$data['IssueNumber'] = $postdata['cc_issue'];
+					$data['CV2'] = $postdata['cc_cvv2'];
+					$data['CV2Policy'] = $this->config->get('paymentsense_direct_cv2_policy_1') . $this->config->get('paymentsense_direct_cv2_policy_2');
+					$data['AVSPolicy'] = $this->config->get('paymentsense_direct_avs_policy_1') . $this->config->get('paymentsense_direct_avs_policy_2') . $this->config->get('paymentsense_direct_avs_policy_3') . $this->config->get('paymentsense_direct_avs_policy_4');
+					$data['Address1'] = $order_info['payment_address_1'];
+					if ($order_info['payment_address_2']) {
+						$data['Address2'] = $order_info['payment_address_2'];
+					} else {
+						$data['Address2'] = "";	
+					}
+					$data['Address3'] = "";
+					$data['Address4'] = "";		
+					$data['City'] = $order_info['payment_city'];
+					$data['State'] = "";
+					$data['PostCode'] = $order_info['payment_postcode'];		
+					$data['CountryCode'] = $order_country;	
+					$data['PhoneNumber'] = $order_info['telephone'];		
+					$data['EmailAddress'] = $order_info['email'];
+					$data['CustomerIPAddress'] = $this->request->server['REMOTE_ADDR'];
+					$json = array();
+					$headers = array(
+						'SOAPAction:https://www.thepaymentgateway.net/CardDetailsTransaction',
+						'Content-Type: text/xml; charset = utf-8',
+						'Connection: close'
+					);
+					$xml = '<?xml version="1.0" encoding="utf-8"?>';
+					$xml .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+					$xml .= '<soap:Body>';
+					$xml .= '<CardDetailsTransaction xmlns="https://www.thepaymentgateway.net/">';
+					$xml .= '<PaymentMessage>';
+					$xml .= '<MerchantAuthentication MerchantID="'.$data['MerchantID'].'" Password="'.$data['MerchantPassword'].'" />';
+					$xml .= '<TransactionDetails Amount="'.$data['Amount'].'" CurrencyCode="'. $data['Currency'] .'">';
+					$xml .= '<MessageDetails TransactionType="'. $data['TransactionType'] .'" />';
+					$xml .= '<OrderID>'.$data['OrderID'].'</OrderID>';
+					$xml .= '<OrderDescription>'. $data['Description'] .'</OrderDescription>';
+					$xml .= '<TransactionControl>';
+					$xml .= '<EchoCardType>TRUE</EchoCardType>';
+					$xml .= '<EchoAVSCheckResult>TRUE</EchoAVSCheckResult>';
+					$xml .= '<EchoCV2CheckResult>TRUE</EchoCV2CheckResult>';
+					$xml .= '<EchoAmountReceived>TRUE</EchoAmountReceived>';
+					$xml .= '<DuplicateDelay>20</DuplicateDelay>';
+					$xml .= '<AVSOverridePolicy>'. $data['AVSPolicy'] .'</AVSOverridePolicy>';
+					$xml .= '<CV2OverridePolicy>'. $data['CV2Policy'] .'</CV2OverridePolicy>';
+					$xml .= '<CustomVariables>';
+					$xml .= '<GenericVariable Name="MyInputVariable" Value="Ping" />';
+					$xml .= '</CustomVariables>';
+					$xml .= '</TransactionControl>';
+					$xml .= '</TransactionDetails>';
+					$xml .= '<CardDetails>';
+					$xml .= '<CardName>'.$data['CardName'].'</CardName>';
+					$xml .= '<CardNumber>'.$data['CardNumber'].'</CardNumber>';
+					if ($data['ExpiryDateMonth'] != "") $xml .= '<ExpiryDate Month="'.$data['ExpiryDateMonth'].'" Year="'.$data['ExpiryDateYear'].'" />';
+					if ($data['StartDateMonth'] != "") $xml .= '<StartDate Month="'.$data['StartDateMonth'].'" Year="'.$data['StartDateYear'].'" />';
+					$xml .= '<CV2>'.$data['CV2'].'</CV2>';
+					if ($data['IssueNumber'] != "") $xml .= '<IssueNumber>'.$data['IssueNumber'].'</IssueNumber>';
+					$xml .= '</CardDetails>';
+					$xml .= '<CustomerDetails>';
+					$xml .= '<BillingAddress>';
+					$xml .= '<Address1>'.$data['Address1'].'</Address1>';
+					if ($data['Address2'] != "") $xml .= '<Address2>'.$data['Address2'].'</Address2>';
+					if ($data['Address3'] != "") $xml .= '<Address3>'.$data['Address3'].'</Address3>';
+					if ($data['Address4'] != "") $xml .= '<Address4>'.$data['Address4'].'</Address4>';
+					$xml .= '<City>'.$data['City'].'</City>';
+					if ($data['State'] != "") $xml .= '<State>'.$data['State'].'</State>';
+					$xml .= '<PostCode>'.$data['PostCode'].'</PostCode>';
+					$xml .= '<CountryCode>'. $data['CountryCode'] .'</CountryCode>';
+					$xml .= '</BillingAddress>';
+					$xml .= '<EmailAddress>'.$data['EmailAddress'].'</EmailAddress>';
+					$xml .= '<PhoneNumber>'.$data['PhoneNumber'].'</PhoneNumber>';
+					$xml .= '<CustomerIPAddress>'.$data['CustomerIPAddress'].'</CustomerIPAddress>';
+					$xml .= '</CustomerDetails>';
+					$xml .= '<PassOutData>Some data to be passed out</PassOutData>';
+					$xml .= '</PaymentMessage>';
+					$xml .= '</CardDetailsTransaction>';
+					$xml .= '</soap:Body>';
+					$xml .= '</soap:Envelope>';
+					$gwId = 1;
+					$domain = "paymentsensegateway.com";
+					$port = "4430";
+					$transattempt = 1;
+					$soapSuccess = false;
+					$success = "";
+					while(!$soapSuccess && $gwId <= 3 && $transattempt <= 3) {	
+						$url = 'https://gw'.$gwId.'.'.$domain.':'.$port.'/';
+						//$url = 'https://gw1.paymentsensegateway.com:4430/';
+						$curl = curl_init();
+						curl_setopt($curl, CURLOPT_HEADER, false);
+						curl_setopt($curl, CURLOPT_HTTPHEADER, $headers); 
+						curl_setopt($curl, CURLOPT_POST, true);
+						curl_setopt($curl, CURLOPT_URL, $url);
+						curl_setopt($curl, CURLOPT_POSTFIELDS, $xml);
+						curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+						curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
+						curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+						$ret = curl_exec($curl);
+						$err = curl_errno($curl);
+						$retHead = curl_getinfo($curl);
+						curl_close($curl);
+						$curl = null;
+						//$json['error'] .= "\r\rerr=". $err ."\r\r"."response=".$ret;
+						if( $err == 0 ) {
+							$StatusCode = null;
+							$soapStatusCode = null;
+							if( preg_match('#<StatusCode>([0-9]+)</StatusCode>#iU', $ret, $soapStatusCode) ) {
+								$StatusCode = (int)$soapStatusCode[1];
+								$AuthCode = null;
+								$soapAuthCode = null;
+								$CrossReference = null;
+								$soapCrossReference = null;
+								$Message = null;
+								$soapMessage = null;
+								if( preg_match('#<AuthCode>([a-zA-Z0-9]+)</AuthCode>#iU', $ret, $soapAuthCode) ) {
+									$AuthCode = $soapAuthCode[1];
+								}
+								if( preg_match('#<TransactionOutputData.*CrossReference="([a-zA-Z0-9]+)".*>#iU', $ret, $soapCrossReference) ) {
+									$CrossReference = $soapCrossReference[1];
+								}
+								if( preg_match('#<Message>(.+)</Message>#iU', $ret, $soapMessage) ) {
+									$Message = $soapMessage[1];
+								}
+								if( $StatusCode != 50 ) {
+									$soapSuccess = true;
+									switch( $StatusCode ) {
+										case 0:
+											$order_status_id = $this->config->get('paymentsense_direct_order_status_id');
+											if (!isset($this->session->data['edit_order'])) {
+												$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+											}
+											if( preg_match('#<AddressNumericCheckResult>(.+)</AddressNumericCheckResult>#iU', $ret, $soapAVSCheck) ) {
+												$AVSCheck = $soapAVSCheck[1];
+											}
+											if( preg_match('#<PostCodeCheckResult>(.+)</PostCodeCheckResult>#iU', $ret, $soapPostCodeCheck) ) {
+												$PostCodeCheck = $soapPostCodeCheck[1];
+											}
+											if( preg_match('#<CV2CheckResult>(.+)</CV2CheckResult>#iU', $ret, $soapCV2Check) ) {
+												$CV2Check = $soapCV2Check[1];
+											}
+											$message = 'AuthCode: ' . $AuthCode . " || " . 'CrossReference: ' . $CrossReference . " || " . 'AVS Check: ' . $AVSCheck . " || " . 'Postcode Check: ' . $PostCodeCheck . " || " . 'CV2 Check: ' . $CV2Check;					
+											if (!isset($this->session->data['edit_order'])) {
+												$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+											} else {
+												$this->session->data['payment_message'] = $message;
+											}
+											$success = "success";
+											break;
+										case 3:
+											if( preg_match('#<ThreeDSecureOutputData>.*<PaREQ>(.+)</PaREQ>.*<ACSURL>(.+)</ACSURL>.*</ThreeDSecureOutputData>#iU', $ret, $soap3DSec) ) {
+												$PaREQ = $soap3DSec[1];
+												$ACSurl = $soap3DSec[2];
+												$json['ACSURL'] = $ACSurl;
+												$json['MD'] = $CrossReference;
+												$json['PaReq'] = $PaREQ;
+												$json['TermUrl'] = $this->url->link('payment/paymentsense_direct/callback', '', 'SSL');
+											} else {
+												$success = 'Incorrect 3DSecure data.';
+											}
+											break;
+										case 4:
+											// Referred
+											$success = 'Your card has been referred - please try a different card';
+											break;
+										case 5:
+											// Declined
+											$success = 'Your card has been declined - ';
+											if( preg_match('#<AddressNumericCheckResult>(.+)</AddressNumericCheckResult>#iU', $ret, $soapAVSCheck) ) {
+												$AVSCheck = $soapAVSCheck[1];
+											}
+											$failedreasons = "";
+											if ($AVSCheck == "FAILED") {
+												if ($failedreasons <> "") {
+													$failedreasons .= " + AVS";
+												} else {
+													$failedreasons = "Billing address";
+												}
+											}
+											if( preg_match('#<PostCodeCheckResult>(.+)</PostCodeCheckResult>#iU', $ret, $soapPostCodeCheck) ) {
+												$PostCodeCheck = $soapPostCodeCheck[1];
+											}
+											if ($PostCodeCheck == "FAILED") {
+												if ($failedreasons <> "") {
+													$failedreasons .= " + Postcode";
+												} else {
+													$failedreasons = "Postcode";
+												}
+											}
+											if( preg_match('#<CV2CheckResult>(.+)</CV2CheckResult>#iU', $ret, $soapCV2Check) ) {
+												$CV2Check = $soapCV2Check[1];
+											}
+											if ($CV2Check == "FAILED") {
+												if ($failedreasons <> "") {
+													$failedreasons .= " + CV2";
+												} else {
+													$failedreasons = "CV2";
+												}
+											}
+											if ($failedreasons <> "") {
+												$success .= $failedreasons . " checks failed. ";
+											}
+																			
+											$success .= 'Please check your billing address and card details and try again';
+											break;
+										case 20:
+											// Duplicate
+											// check the previous status in order to know if the transaction was a success
+											if( preg_match('#<PreviousTransactionResult>.*<StatusCode>([0-9]+)</StatusCode>#iU', $ret, $soapStatus2) ) {
+												if( $soapStatus2[1] == '0' ) {
+													$order_status_id = $this->config->get('paymentsense_direct_order_status_id');
+													if (!isset($this->session->data['edit_order'])) {
+														$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+													}
+													if( preg_match('#<AddressNumericCheckResult>(.+)</AddressNumericCheckResult>#iU', $ret, $soapAVSCheck) ) {
+														$AVSCheck = $soapAVSCheck[1];
+													}
+													if( preg_match('#<PostCodeCheckResult>(.+)</PostCodeCheckResult>#iU', $ret, $soapPostCodeCheck) ) {
+														$PostCodeCheck = $soapPostCodeCheck[1];
+													}
+													if( preg_match('#<CV2CheckResult>(.+)</CV2CheckResult>#iU', $ret, $soapCV2Check) ) {
+														$CV2Check = $soapCV2Check[1];
+													}
+													$message = 'AuthCode: ' . $AuthCode . " || " . 'CrossReference: ' . $CrossReference . " || " . 'AVS Check: ' . $AVSCheck . " || " . 'Postcode Check: ' . $PostCodeCheck . " || " . 'CV2 Check: ' . $CV2Check . ' || ' . '3D Secure: PASSED';					
+													if (!isset($this->session->data['edit_order'])) {
+														$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+													} else {
+														$this->session->data['payment_message'] = $message;
+													}
+													$success = "success";
+													break;
+												} else if( $soapStatus2[1] == '4' ) {
+													$success = 'Your card has been referred - please try a different card';
+													break;
+												} else if( $soapStatus2[1] == '5' ) {
+													$success = 'Your card has been declined - ' . str_replace("Card declined: ","",$Message) . ' checks failed.\nPlease check your billing address and card details and try again';
+													break;
+												} else {
+													$success = 'Duplicate transaction';
+												}
+											} else {
+												$success = 'Duplicate transaction';
+											}
+											break;
+										case 30:
+										default:
+											// generic error
+											// read error message
+											if( preg_match('#<Message>(.*)</Message>#iU', $ret, $msg) ) {
+												$msg = $msg[1];
+											} else {
+												$msg = '';
+											}
+											$success = 'PaymentSense Error ('.$StatusCode.') :' . $msg;
+											break;
+									}
+								}
+							}
+						}
+						if ($transattempt <=3) {
+							$transattempt++;
+						} else {
+							$transattempt = 1;
+							$gwId++;
+						}			
+					}
+					return $success;
+				}	 
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="catalog/model/payment/perpetual_payments.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$this->language->load('oentrypayment/perpetual_payments');
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$amt = $order_info['total'];
+					$payment_data = array(
+						'auth_id'       => $this->config->get('perpetual_payments_auth_id'),
+						'auth_pass'     => $this->config->get('perpetual_payments_auth_pass'),
+						'card_num'      => str_replace(' ', '', $postdata['cc_number']),
+						'card_cvv'      => $postdata['cc_cvv2'],
+						'card_start'    => $postdata['cc_start_date_month'] . substr($postdata['cc_start_date_year'], 2),
+						'card_expiry'   => $postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], 2),
+						'cust_name'     => $order_info['payment_firstname'] . ' ' . $order_info['payment_lastname'],
+						'cust_address'  => $order_info['payment_address_1'] . ' ' . $order_info['payment_city'],
+						'cust_country'  => $order_info['payment_iso_code_2'],
+						'cust_postcode'	=> $order_info['payment_postcode'],
+						'cust_tel'	 	=> $order_info['telephone'],
+						'cust_ip'       => $this->request->server['REMOTE_ADDR'],
+						'cust_email'    => $order_info['email'],
+						'tran_ref'      => $order_id,
+						'tran_amount'   => $this->currency->format($amt, $order_info['currency_code'], 1.00000, false),
+						'tran_currency' => $order_info['currency_code'],
+						'tran_testmode' => $this->config->get('perpetual_payments_test'),
+						'tran_type'     => 'Sale',
+						'tran_class'    => 'MoTo',
+					);
+					$curl = curl_init('https://secure.voice-pay.com/gateway/remote');
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($payment_data));
+					$response = curl_exec($curl);
+					curl_close($curl);
+					$success = "";
+					if ($response) {
+						$data = explode('|', $response);
+						if (isset($data[0]) && $data[0] == 'A') {
+							$order_status_id = $this->config->get('perpetual_payments_order_status_id');
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+							}
+							$message = '';
+							if (isset($data[1])) {
+								$message .= $this->language->get('text_transaction') . ' ' . $data[1] . "\n";
+							}
+							if (isset($data[2])) {
+								if ($data[2] == '232') {
+									$message .= $this->language->get('text_avs') . ' ' . $this->language->get('text_avs_full_match') . "\n";
+								} elseif ($data[2] == '400') {
+									$message .= $this->language->get('text_avs') . ' ' . $this->language->get('text_avs_not_match') . "\n";
+								}
+							}
+							if (isset($data[3])) {
+								$message .= $this->language->get('text_authorisation') . ' ' . $data[3] . "\n";
+							}
+							if (!isset($this->session->data['edit_order'])) {
+								$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+							} else {
+								$this->session->data['payment_message'] = $message;
+							}
+							$success = "success";
+						} else {
+							$success = end($data);
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="catalog/model/payment/pp_payflow_pro.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('pp_payflow_pro_server') == 'T') {
+						$api_endpoint = 'https://pilot-payflowpro.paypal.com';
+					} else {
+						$api_endpoint = 'https://payflowpro.paypal.com';
+					}
+					if ($this->config->get('pp_payflow_pro_transaction') == 'A') {
+						$transaction_type = 'A';
+					} else {
+						$transaction_type = 'S';
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} elseif (isset($this->session->data['edit_order'])) {
+						$order_id = $this->session->data['edit_order'];
+					} elseif (isset($postdata['order_id'])) {
+						$order_id = $postdata['order_id'];
+					} else {
+						$order_id = 0;
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$amt = $order_info['total'];
+					$prefix_order_id = $this->config->get('pp_payflow_pro_idprefix') . $order_id;
+					$payment_data_array = array(
+						'PARTNER'   => html_entity_decode($this->config->get('pp_payflow_pro_partner'), ENT_QUOTES, 'UTF-8'),
+						'VENDOR'    => html_entity_decode($this->config->get('pp_payflow_pro_vendor'), ENT_QUOTES, 'UTF-8'),
+						'USER'      => html_entity_decode($this->config->get('pp_payflow_pro_username'), ENT_QUOTES, 'UTF-8'),
+						'PWD'       => html_entity_decode($this->config->get('pp_payflow_pro_password'), ENT_QUOTES, 'UTF-8'),
+						'TRXTYPE'   => $transaction_type,
+						'TENDER'    => 'C',
+						'ACCT'      => preg_replace('/[^0-9]/', '', $postdata['cc_number']),
+						'CVV2'      => preg_replace('/[^0-9]/', '', $postdata['cc_cvv2']),
+						'EXPDATE'   => $postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], 2),
+						'AMT'       => $this->currency->format($amt, $order_info['currency_code'], 1.00000, FALSE),
+						'FIRSTNAME' => $order_info['payment_firstname'],
+						'LASTNAME'  => $order_info['payment_lastname'],
+						'STREET'    => $order_info['payment_address_1'],
+						'ZIP'       => $order_info['payment_postcode'],
+						'CUSTIP'	=> $order_info['ip'],
+						'CITY'		=> $order_info['payment_city'],
+						'STATE'		=>($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code'],
+						'EMAIL'		=> $order_info['email'],
+						'BILLTOCOUNTRY'  => $order_info['payment_iso_code_2'],
+						'PHONENUM'	=> $order_info['telephone'],
+					);
+					if ($this->cart->hasShipping()) {
+						$payment_data_array += array(
+							'SHIPTOSTREET' => $order_info['shipping_address_1'],
+							'SHIPTOCITY'   => $order_info['shipping_city'],
+							'SHIPTOSTATE'  =>($order_info['shipping_iso_code_2'] != 'US') ? $order_info['shipping_zone'] : $order_info['shipping_zone_code'],
+							'SHIPTOZIP'    => $order_info['shipping_postcode'],
+							'SHIPTOCOUNTRY' 	=> $order_info['shipping_iso_code_2'],
+						);
+					} else {
+						$payment_data_array += array(
+							'SHIPTOSTREET' => $order_info['payment_address_1'],
+							'SHIPTOCITY'   => $order_info['payment_city'],
+							'SHIPTOSTATE'  =>($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code'],
+							'SHIPTOZIP'    => $order_info['payment_postcode'],
+							'SHIPTOCOUNTRY' 	=> $order_info['payment_iso_code_2'],
+						);
+					}                   
+					$products = $this->cart->getProducts();
+					$products_summary = array();
+					$total_products=0;
+					$index=0;
+					foreach ($products as $product){
+						$products_summary[]= $product['quantity'].'x'.$product['model'];
+						$total_products += $product['quantity'];
+						if ($product['price']>0) {
+							$payment_data_array += array(
+								'L_COST'.$index => $this->currency->format($product['price'], $order_info['currency_code'], 1.00000, FALSE),
+								'L_QTY'.$index  => $product['quantity'],
+								'L_DESC'.$index  => $product['model'],
+							);
+							if (!empty($product['sku'])) {
+								$payment_data_array['L_SKU'.$index ] = $product['sku'];
+							}
+							if (!empty($product['upc'])) {
+								$payment_data_array['L_UPC'.$index ] = $product['upc'];
+							}
+						}
+						$index++;
+					}
+					$products_summary = implode(',',$products_summary);
+					$comment_search = array(
+						'{id}'
+						,'{ip}'
+						,'{total_models}'
+						,'{total_products}'
+						,'{cart}'
+					);
+					$comment_replace = array(
+						$order_info['order_id']
+						,$order_info['ip']
+						,count($products)
+						,$total_products
+						,$products_summary
+					);
+					$comment1 = $this->config->get('pp_payflow_pro_comment1');
+					if (!empty($comment1)){
+						$payment_data_array['COMMENT1'] = html_entity_decode(substr(str_replace($comment_search,$comment_replace,$comment1),0,128));
+					}
+					$comment2 = $this->config->get('pp_payflow_pro_comment2');
+					if (!empty($comment2)){
+						$payment_data_array['COMMENT2'] = html_entity_decode(substr(str_replace($comment_search,$comment_replace,$comment2),0,128));
+					}
+					$invnum = html_entity_decode($this->config->get('pp_payflow_pro_invnum'), ENT_QUOTES, 'UTF-8');
+					if ($invnum != '')  $payment_data_array['INVNUM'] = $invnum;
+					$payment_data = array();
+					foreach ($payment_data_array as $key => $value) {
+						$payment_data[] = $key . '[' . strlen($value) . ']=' . $value;
+					}
+					$payment_data = implode('&', $payment_data);
+					if ($this->config->get('pp_payflow_pro_server') == 'T') {
+						$payment_data_test = preg_replace('/(USER|VENDOR|PWD|ACCT|CVV2|EXPDATE)(\[[^\]]+\]=)([^&]*)/','$1$2xxxxx',$payment_data);
+						$this->log->write('PPPayflowPro Test Mode - Sent Parameter String: ' . $payment_data_test);
+					}
+					$headers = array();
+					$headers[] = 'Content-Type: text/namevalue';
+					$headers[] = 'Content-Length: ' . strlen($payment_data);
+					$headers[] = 'X-VPS-Client-Timeout: 30';
+					$headers[] = 'X-VPS-Request-ID: ' . $prefix_order_id . time();
+					$headers[] = 'X-VPS-VIT-Integration-Product: OpenCart.com with PPPayflowPro Extension';
+					if (defined('VERSION')) {
+						$headers[] = 'X-VPS-VIT-Integration-Version: '.VERSION;
+					}
+					$curl = curl_init();
+					curl_setopt($curl, CURLOPT_URL, $api_endpoint);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+					curl_setopt($curl, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+					curl_setopt($curl, CURLOPT_HEADER, 1);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_TIMEOUT, 40);
+					curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, $payment_data);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					$result = curl_exec($curl);
+					$headers = curl_getinfo($curl);
+					if ($result === false)  {
+						$result = 'RESULT=-10000&RESPMSG=Unable to connect to the payment gateway to process the transaction.';
+						$this->log->write('PPPayflowPro Send Error: ' . curl_error($curl) . '(' . curl_errno($curl) . ')');
+					} else if ($headers['http_code'] != 200) {
+						$result = 'RESULT=-10001&RESPMSG=HTTP 200 Response expected.  Received ' . $headers['http_code'] . '.';
+						$this->log->write('PPPayflowPro Recieve Error: ' . curl_error($curl) . '(' . curl_errno($curl) . ')');
+					}
+					curl_close($curl);
+					$result = strstr($result, 'RESULT');
+					$result = explode('&', $result);
+					$response_data = array();
+					foreach ($result as $temp) {
+						$pos = strpos($temp, '=');
+						if ($pos !== false)  $response_data[substr($temp, 0, $pos)] = substr($temp, $pos + 1);
+					}
+					$success = "";
+					$message = '';
+					if (in_array($response_data['RESULT'],array('0','126'))) {
+						if ($this->config->get('pp_payflow_pro_server') == 'T') {
+							$message .= 'NOTICE: This was a Test transaction' . "\n";
+						}
+						if (in_array($response_data['RESULT'],array('126'))) {
+							$message .= 'NOTICE: '.$response_data['RESPMSG'] .'-Login to manager.paypal.com to review this transaction (Reports > Fraud Protection > Fraud Transactions)'."\n";
+							$order_status_id = $this->config->get('config_order_status_id');
+							$mail = new Mail(); 
+							$subject='PP Payflow Pro, PayPal FPS-Transaction needs review.';
+							$text='Login to manager.paypal.com to review recent transation (Reports > Fraud Protection > Fraud Transactions). If you reject it you must cancel the corresponding transaction in opencart to notify the customer. If you do not want to review these types of Fraud Filters change your filters action from Review to Reject or turn off the filter completely (Service Settings > Fraud Protection > Edit Standard Filters - after making changes click "Deploy")';
+											$mail->protocol = $this->config->get('config_mail_protocol');
+											$mail->parameter = $this->config->get('config_mail_parameter');
+											$mail->hostname = $this->config->get('config_smtp_host');
+											$mail->username = $this->config->get('config_smtp_username');
+											$mail->password = $this->config->get('config_smtp_password');
+											$mail->port = $this->config->get('config_smtp_port');
+											$mail->timeout = $this->config->get('config_smtp_timeout');
+											$mail->setTo($this->config->get('config_email'));
+											$mail->setFrom($this->config->get('config_email'));
+											$mail->setSender($this->config->get('config_name'));
+											$mail->setSubject(html_entity_decode($subject, ENT_QUOTES, 'UTF-8'));
+											$mail->setText(html_entity_decode($text, ENT_QUOTES, 'UTF-8'));
+											$mail->send();
+						}
+						$order_status_id = $this->config->get('pp_payflow_pro_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						if (isset($response_data['PNREF'])) {
+							$message .= 'Transaction ID (PNREF): ' . $response_data['PNREF'] . "\n";
+						}
+						if (isset($response_data['DUPLICATE']) && $response_data['DUPLICATE'] != 0) {
+							$message .= 'DUPLICATE: ' . $response_data['DUPLICATE'] . "\n";
+						}
+						if (isset($response_data['AVSADDR'])) {
+							$message .= 'AVSADDR: ' . $response_data['AVSADDR'] . "\n";
+						}
+						if (isset($response_data['AVSZIP'])) {
+							$message .= 'AVSZIP: ' . $response_data['AVSZIP'] . "\n";
+						}
+						if (isset($response_data['IAVS'])) {
+							$message .= 'IAVS: ' . $response_data['IAVS'] . "\n";
+						}
+						if (isset($response_data['CVV2MATCH'])) {
+							$message .= 'CVV2MATCH: ' . $response_data['CVV2MATCH'] . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						if (in_array($response_data['RESULT'], array('1','3','4','5','6','7','8','9','10','26','27','28'))){
+							$current_state=($this->config->get('pp_payflow_pro_server') == 'T')?'TEST':'LIVE';
+							$this->log->write('PPPayflowPro Error ('.$current_state.') '.$response_data['RESULT'].': '.$response_data['RESPMSG']);
+							$success = $this->language->get('text_unexpected_error');
+							$mail = new Mail(); 
+							$subject='PP Payflow Pro-Needs attention.';
+							$text='Please address this recent error: '.$response_data['RESULT'].'-'.$response_data['RESPMSG']."\n".'See documentation at http://www.paypal.com/en_US/pdf/PayflowPro_HTTPS_Interface_Guide.pdf';
+											$mail->protocol = $this->config->get('config_mail_protocol');
+											$mail->parameter = $this->config->get('config_mail_parameter');
+											$mail->hostname = $this->config->get('config_smtp_host');
+											$mail->username = $this->config->get('config_smtp_username');
+											$mail->password = $this->config->get('config_smtp_password');
+											$mail->port = $this->config->get('config_smtp_port');
+											$mail->timeout = $this->config->get('config_smtp_timeout');
+											$mail->setTo($this->config->get('config_email'));
+											$mail->setFrom($this->config->get('config_email'));
+											$mail->setSender($this->config->get('config_name'));
+											$mail->setSubject(html_entity_decode($subject, ENT_QUOTES, 'UTF-8'));
+											$mail->setText(html_entity_decode($text, ENT_QUOTES, 'UTF-8'));
+											$mail->send();
+						}elseif (in_array($response_data['RESULT'], array('125','128'))){
+							$success = 'Declined';
+						}else{
+							$success = $response_data['RESPMSG'];
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/pp_pro.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) { 
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if (!$this->config->get('pp_pro_transaction')) {
+						$payment_type = 'Authorization';	
+					} else {
+						$payment_type = 'Sale';
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$request  = 'METHOD=DoDirectPayment';
+					$request .= '&VERSION=51.0';
+					$request .= '&USER=' . urlencode($this->config->get('pp_pro_username'));
+					$request .= '&PWD=' . urlencode($this->config->get('pp_pro_password'));
+					$request .= '&SIGNATURE=' . urlencode($this->config->get('pp_pro_signature'));
+					$request .= '&CUSTREF=' . (int)$order_id;
+					$request .= '&PAYMENTACTION=' . $payment_type;
+					$amt = $order_info['total'];
+					$request .= '&AMT=' . $this->currency->format($amt, $order_info['currency_code'], false, false);
+					$request .= '&CREDITCARDTYPE=' . $postdata['cc_type'];
+					$request .= '&ACCT=' . urlencode(str_replace(' ', '', $postdata['cc_number']));
+					$request .= '&CARDSTART=' . urlencode($postdata['cc_start_date_month'] . $postdata['cc_start_date_year']);
+					$request .= '&EXPDATE=' . urlencode($postdata['cc_expire_date_month'] . $postdata['cc_expire_date_year']);
+					$request .= '&CVV2=' . urlencode($postdata['cc_cvv2']);
+					if ($postdata['cc_type'] == 'SWITCH' || $postdata['cc_type'] == 'SOLO') { 
+						$request .= '&CARDISSUE=' . urlencode($postdata['cc_issue']);
+					}
+					$request .= '&FIRSTNAME=' . urlencode($order_info['payment_firstname']);
+					$request .= '&LASTNAME=' . urlencode($order_info['payment_lastname']);
+					$request .= '&EMAIL=' . urlencode($order_info['email']);
+					$request .= '&PHONENUM=' . urlencode($order_info['telephone']);
+					$request .= '&IPADDRESS=' . urlencode($this->request->server['REMOTE_ADDR']);
+					$request .= '&STREET=' . urlencode($order_info['payment_address_1']);
+					$request .= '&CITY=' . urlencode($order_info['payment_city']);
+					$request .= '&STATE=' . urlencode(($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code']);
+					$request .= '&ZIP=' . urlencode($order_info['payment_postcode']);
+					$request .= '&COUNTRYCODE=' . urlencode($order_info['payment_iso_code_2']);
+					$request .= '&CURRENCYCODE=' . urlencode($order_info['currency_code']);
+					if ($this->cart->hasShipping()) {
+						$request .= '&SHIPTONAME=' . urlencode($order_info['shipping_firstname'] . ' ' . $order_info['shipping_lastname']);
+						$request .= '&SHIPTOSTREET=' . urlencode($order_info['shipping_address_1']);
+						$request .= '&SHIPTOCITY=' . urlencode($order_info['shipping_city']);
+						$request .= '&SHIPTOSTATE=' . urlencode(($order_info['shipping_iso_code_2'] != 'US') ? $order_info['shipping_zone'] : $order_info['shipping_zone_code']);
+						$request .= '&SHIPTOCOUNTRYCODE=' . urlencode($order_info['shipping_iso_code_2']);
+						$request .= '&SHIPTOZIP=' . urlencode($order_info['shipping_postcode']);
+					} else {
+						$request .= '&SHIPTONAME=' . urlencode($order_info['payment_firstname'] . ' ' . $order_info['payment_lastname']);
+						$request .= '&SHIPTOSTREET=' . urlencode($order_info['payment_address_1']);
+						$request .= '&SHIPTOCITY=' . urlencode($order_info['payment_city']);
+						$request .= '&SHIPTOSTATE=' . urlencode(($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code']);
+						$request .= '&SHIPTOCOUNTRYCODE=' . urlencode($order_info['payment_iso_code_2']);
+						$request .= '&SHIPTOZIP=' . urlencode($order_info['payment_postcode']);			
+					}		
+					if (!$this->config->get('pp_pro_test')) {
+						$curl = curl_init('https://api-3t.paypal.com/nvp');
+					} else {
+						$curl = curl_init('https://api-3t.sandbox.paypal.com/nvp');
+					}
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, $request);
+					$response = curl_exec($curl);
+					if (!$response) {
+						$this->log->write('DoDirectPayment failed: ' . curl_error($curl) . '(' . curl_errno($curl) . ')');
+					}
+					curl_close($curl);
+					$response_info = array();
+					$success = "";
+					parse_str($response, $response_info);
+					if (($response_info['ACK'] == 'Success') || ($response_info['ACK'] == 'SuccessWithWarning')) {
+						$order_status_id = $this->config->get('pp_pro_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';
+						if (isset($response_info['AVSCODE'])) {
+							$message .= 'AVSCODE: ' . $response_info['AVSCODE'] . "\n";
+						}
+						if (isset($response_info['CVV2MATCH'])) {
+							$message .= 'CVV2MATCH: ' . $response_info['CVV2MATCH'] . "\n";
+						}
+						if (isset($response_info['TRANSACTIONID'])) {
+							$message .= 'TRANSACTIONID: ' . $response_info['TRANSACTIONID'] . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						$success = $response_info['L_LONGMESSAGE0'];
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="catalog/model/payment/pp_pro_pf.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$this->language->load('oentrypayment/pp_pro_pf');
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					if (!$this->config->get('pp_pro_pf_transaction')) {
+						$payment_type = 'A';
+					} else {
+						$payment_type = 'S';
+					}
+					$firstname = explode(' ',$postdata['cc_owner']);
+					$request = 'USER=' . urlencode($this->config->get('pp_pro_pf_user'));
+					$request .= '&VENDOR=' . urlencode($this->config->get('pp_pro_pf_vendor'));
+					$request .= '&PARTNER=' . urlencode($this->config->get('pp_pro_pf_partner'));
+					$request .= '&PWD=' . urlencode($this->config->get('pp_pro_pf_password'));
+					$request .= '&TENDER=C';
+					$request .= '&TRXTYPE=' . $payment_type;
+					$request .= '&AMT=' . $this->currency->format($order_info['total'], $order_info['currency_code'], 1.00000, false);
+					$request .= '&CURRENCY=' . urlencode($order_info['currency_code']);
+					$request .= '&FIRSTNAME=' . urlencode($firstname[0]);
+					$request .= '&LASTNAME=' . urlencode($firstname[1]);
+					$request .= '&STREET=' . urlencode($order_info['payment_address_1']);
+					$request .= '&CITY=' . urlencode($order_info['payment_city']);
+					$request .= '&STATE=' . urlencode(($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code']);
+					$request .= '&COUNTRY=' . urlencode($order_info['payment_iso_code_2']);
+					$request .= '&ZIP=' . urlencode(str_replace(' ', '', $order_info['payment_postcode']));
+					$request .= '&CLIENTIP=' . urlencode($this->request->server['REMOTE_ADDR']);
+					//$request .= '&EMAIL=' . urlencode($order_info['email']);
+					$request .= '&ACCT=' . urlencode(str_replace(' ', '', $postdata['cc_number']));
+					$request .= '&ACCTTYPE=' . urlencode($postdata['cc_type']);
+				  //  $request .= '&CARDSTART=' . urlencode($postdata['cc_start_date_month'] . substr($postdata['cc_start_date_year'], - 2, 2));
+					$request .= '&EXPDATE=' . urlencode($postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], - 2, 2));
+					$request .= '&CVV2=' . urlencode($postdata['cc_cvv2']);
+				  //  $request .= '&CARDISSUE=' . urlencode($postdata['cc_issue']);
+					//$request .= '&BUTTONSOURCE=' . urlencode('OpenCart_Cart_PFP');
+					if (!$this->config->get('pp_pro_pf_test')) {
+						$curl = curl_init('https://payflowpro.verisign.com/transaction');
+					} else {
+						$curl = curl_init('https://pilot-payflowpro.verisign.com/transaction');
+					}
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, $request);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, array('X-VPS-REQUEST-ID: ' . md5($order_id . mt_rand())));
+					$response = curl_exec($curl);
+					if (!$response) {
+						$this->log->write('DoDirectPayment failed: ' . curl_error($curl) . '(' . curl_errno($curl) . ')');
+					}
+					curl_close($curl);
+					$response_info = array();
+					parse_str($response, $response_info);
+					$success = "";
+					if ($response_info['RESULT'] == '0') {
+						$order_status_id = $this->config->get('pp_pro_pf_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';
+						if (isset($response_info['AVSCODE'])) {
+							$message .= 'AVSCODE: ' . $response_info['AVSCODE'] . "\n";
+						}
+						if (isset($response_info['CVV2MATCH'])) {
+							$message .= 'CVV2MATCH: ' . $response_info['CVV2MATCH'] . "\n";
+						}
+						if (isset($response_info['TRANSACTIONID'])) {
+							$message .= 'TRANSACTIONID: ' . $response_info['TRANSACTIONID'] . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						switch ($response_info['RESULT']) {
+							case '1':
+							case '26':
+								$success = $this->language->get('error_config');
+								break;
+							case '7':
+								$success = $this->language->get('error_address');
+								break;
+							case '12':
+								$success = $this->language->get('error_declined');
+								break;
+							case '23':
+							case '24':
+								$success = $this->language->get('error_invalid');
+								break;
+							default:
+								$success = $this->language->get('error_general');
+								break;
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/pp_pro_uk.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) { 
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$this->language->load('oentrypayment/pp_pro_uk');
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					if (!$this->config->get('pp_pro_uk_transaction')) {
+						$payment_type = 'A';	
+					} else {
+						$payment_type = 'S';
+					}
+					$request  = 'USER=' . urlencode($this->config->get('pp_pro_uk_user'));
+					$request .= '&VENDOR=' . urlencode($this->config->get('pp_pro_uk_vendor'));
+					$request .= '&PARTNER=' . urlencode($this->config->get('pp_pro_uk_partner'));
+					$request .= '&PWD=' . urlencode($this->config->get('pp_pro_uk_password'));
+					$request .= '&TENDER=C';
+					$request .= '&TRXTYPE=' . $payment_type;
+					$amt = $order_info['total'];
+					$request .= '&AMT=' . $this->currency->format($amt, $order_info['currency_code'], false, false);
+					$request .= '&CURRENCY=' . urlencode($order_info['currency_code']);
+					$request .= '&NAME=' . urlencode($postdata['cc_owner']);
+					$request .= '&STREET=' . urlencode($order_info['payment_address_1']);
+					$request .= '&CITY=' . urlencode($order_info['payment_city']);
+					$request .= '&STATE=' . urlencode(($order_info['payment_iso_code_2'] != 'US') ? $order_info['payment_zone'] : $order_info['payment_zone_code']);
+					$request .= '&COUNTRY=' . urlencode($order_info['payment_iso_code_2']);
+					$request .= '&ZIP=' . urlencode(str_replace(' ', '', $order_info['payment_postcode']));
+					$request .= '&CLIENTIP=' . urlencode($this->request->server['REMOTE_ADDR']);
+					$request .= '&EMAIL=' . urlencode($order_info['email']);
+					$request .= '&ACCT=' . urlencode(str_replace(' ', '', $postdata['cc_number']));
+					$request .= '&ACCTTYPE=' . urlencode($postdata['cc_type']);
+					$request .= '&CARDSTART=' . urlencode($postdata['cc_start_date_month'] . substr($postdata['cc_start_date_year'], - 2, 2));
+					$request .= '&EXPDATE=' . urlencode($postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], - 2, 2));
+					$request .= '&CVV2=' . urlencode($postdata['cc_cvv2']);
+					$request .= '&CARDISSUE=' . urlencode($postdata['cc_issue']);
+					if (!$this->config->get('pp_pro_uk_test')) {
+						$curl = curl_init('https://payflowpro.verisign.com/transaction');
+					} else {
+						$curl = curl_init('https://pilot-payflowpro.verisign.com/transaction');
+					}
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, $request);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, array('X-VPS-REQUEST-ID: ' . md5($order_id . mt_rand())));
+					$response = curl_exec($curl);
+					if (!$response) {
+						$this->log->write('DoDirectPayment failed: ' . curl_error($curl) . '(' . curl_errno($curl) . ')');
+					}
+					curl_close($curl);
+					$response_info = array();
+					$success = "";
+					parse_str($response, $response_info);
+					if ($response_info['RESULT'] == '0') {
+						$order_status_id = $this->config->get('pp_pro_uk_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';
+						if (isset($response_info['AVSCODE'])) {
+							$message .= 'AVSCODE: ' . $response_info['AVSCODE'] . "\n";
+						}
+						if (isset($response_info['CVV2MATCH'])) {
+							$message .= 'CVV2MATCH: ' . $response_info['CVV2MATCH'] . "\n";
+						}
+						if (isset($response_info['TRANSACTIONID'])) {
+							$message .= 'TRANSACTIONID: ' . $response_info['TRANSACTIONID'] . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						switch ($response_info['RESULT']) {
+							case '1':
+							case '26':
+								$success = $this->language->get('error_config');
+								break;
+							case '7':
+								$success = $this->language->get('error_address');
+								break;
+							case '12':
+								$success = $this->language->get('error_declined');
+								break;
+							case '23':
+							case '24':
+								$success = $this->language->get('error_invalid');
+								break;
+							default:
+								$success = $this->language->get('error_general');
+								break;
+						}		
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="catalog/model/payment/sagepay_direct.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) { 
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if ($this->config->get('sagepay_direct_test') == 'live') {
+						$url = 'https://live.sagepay.com/gateway/service/vspdirect-register.vsp';
+					} elseif ($this->config->get('sagepay_direct_test') == 'test') {
+						$url = 'https://test.sagepay.com/gateway/service/vspdirect-register.vsp';		
+					} elseif ($this->config->get('sagepay_direct_test') == 'sim') {
+						$url = 'https://test.sagepay.com/Simulator/VSPDirectGateway.asp';
+					} 		
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$data = array();
+					$data['VPSProtocol'] = '2.23';
+					$data['ReferrerID'] = 'E511AF91-E4A0-42DE-80B0-09C981A3FB61';
+					$data['Vendor'] = $this->config->get('sagepay_direct_vendor');
+					$data['VendorTxCode'] = $order_id;
+					$amt = $order_info['total'];
+					$data['Amount'] = $this->currency->format($amt, $order_info['currency_code'], 1.00000, false);
+					$data['Currency'] = $order_info['currency_code'];
+					if (isset($this->session->data['store_id'])) {
+						$store_name = $this->session->data['store_config']['config_name'];
+					} else {
+						$store_name = $this->config->get('config_name');
+					}
+					$data['Description'] = substr($store_name, 0, 100);
+					$data['CardHolder'] = $postdata['cc_owner'];
+					$data['CardNumber'] = $postdata['cc_number'];
+					$data['ExpiryDate'] = $postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], 2);
+					if ($postdata['cc_type'] == 'MASTERCARD') {
+						$postdata['cc_type'] = 'MC';
+					}
+					$data['CardType'] = $postdata['cc_type'];
+					$data['TxType'] = $this->config->get('sagepay_direct_transaction');
+					$data['StartDate'] = $postdata['cc_start_date_month'] . substr($postdata['cc_start_date_year'], 2);
+					$data['IssueNumber'] = $postdata['cc_issue'];
+					$data['CV2'] = $postdata['cc_cvv2'];
+					$data['BillingSurname'] = substr($order_info['payment_lastname'], 0, 20);
+					$data['BillingFirstnames'] = substr($order_info['payment_firstname'], 0, 20);
+					$data['BillingAddress1'] = substr($order_info['payment_address_1'], 0, 100);
+					if ($order_info['payment_address_2']) {
+						$data['BillingAddress2'] = $order_info['payment_address_2'];
+					}
+					$data['BillingCity'] = substr($order_info['payment_city'], 0, 40);
+					$data['BillingPostCode'] = substr($order_info['payment_postcode'], 0, 10);
+					$data['BillingCountry'] = $order_info['payment_iso_code_2'];
+					if ($order_info['payment_iso_code_2'] == 'US') {
+						$data['BillingState'] = $order_info['payment_zone_code'];
+					}
+					$data['BillingPhone'] = substr($order_info['telephone'], 0, 20);
+					if ($this->cart->hasShipping()) {
+						$data['DeliverySurname'] = substr($order_info['shipping_lastname'], 0, 20);
+						$data['DeliveryFirstnames'] = substr($order_info['shipping_firstname'], 0, 20);
+						$data['DeliveryAddress1'] = substr($order_info['shipping_address_1'], 0, 100);
+						if ($order_info['shipping_address_2']) {
+							$data['DeliveryAddress2'] = $order_info['shipping_address_2'];
+						}		
+						$data['DeliveryCity'] = substr($order_info['shipping_city'], 0, 40);
+						$data['DeliveryPostCode'] = substr($order_info['shipping_postcode'], 0, 10);
+						$data['DeliveryCountry'] = $order_info['shipping_iso_code_2'];
+						if ($order_info['shipping_iso_code_2'] == 'US') {
+							$data['DeliveryState'] = $order_info['shipping_zone_code'];
+						}
+						$data['CustomerName'] = substr($order_info['firstname'] . ' ' . $order_info['lastname'], 0, 100);
+						$data['DeliveryPhone'] = substr($order_info['telephone'], 0, 20);
+					} else {
+						$data['DeliveryFirstnames'] = $order_info['payment_firstname'];
+						$data['DeliverySurname'] = $order_info['payment_lastname'];
+						$data['DeliveryAddress1'] = $order_info['payment_address_1'];
+						if ($order_info['payment_address_2']) {
+							$data['DeliveryAddress2'] = $order_info['payment_address_2'];
+						}
+						$data['DeliveryCity'] = $order_info['payment_city'];
+						$data['DeliveryPostCode'] = $order_info['payment_postcode'];
+						$data['DeliveryCountry'] = $order_info['payment_iso_code_2'];
+						if ($order_info['payment_iso_code_2'] == 'US') {
+							$data['DeliveryState'] = $order_info['payment_zone_code'];
+						}
+						$data['DeliveryPhone'] = $order_info['telephone'];			
+					}		
+					$data['CustomerEMail'] = substr($order_info['email'], 0, 255);
+					$data['Apply3DSecure'] = '0';
+					$data['ClientIPAddress'] = $this->request->server['REMOTE_ADDR'];
+					$curl = curl_init($url);
+					curl_setopt($curl, CURLOPT_PORT, 443);
+					curl_setopt($curl, CURLOPT_HEADER, 0);
+					curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+					curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curl, CURLOPT_FORBID_REUSE, 1);
+					curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
+					curl_setopt($curl, CURLOPT_POST, 1);
+					curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
+					$response = curl_exec($curl);
+					curl_close($curl);
+					$data = array();
+					$response_info = explode(chr(10), $response);
+					foreach ($response_info as $string) {
+						if (strpos($string, '=')) {
+							$parts = explode('=', $string, 2);
+							$data[trim($parts[0])] = trim($parts[1]);
+						}
+					}
+					$success = "";
+					if ($data['Status'] == 'OK' || $data['Status'] == 'AUTHENTICATED' || $data['Status'] == 'REGISTERED') {
+						$order_status_id = $this->config->get('sagepay_direct_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message = '';
+						if (isset($data['TxAuthNo'])) {
+							$message .= 'TxAuthNo: ' . $data['TxAuthNo'] . "\n";
+						}
+						if (isset($data['AVSCV2'])) {
+							$message .= 'AVSCV2: ' . $data['AVSCV2'] . "\n";
+						}
+						if (isset($data['AddressResult'])) {
+							$message .= 'AddressResult: ' . $data['AddressResult'] . "\n";
+						}
+						if (isset($data['PostCodeResult'])) {
+							$message .= 'PostCodeResult: ' . $data['PostCodeResult'] . "\n";
+						}
+						if (isset($data['CV2Result'])) {
+							$message .= 'CV2Result: ' . $data['CV2Result'] . "\n";
+						}
+						if (isset($data['3DSecureStatus'])) {
+							$message .= '3DSecureStatus: ' . $data['3DSecureStatus'] . "\n";
+						}
+						if (isset($data['CAVV'])) {
+							$message .= 'CAVV: ' . $data['CAVV'] . "\n";
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						$success = $data['StatusDetail'];
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/sagepay_server.php" error="skip">
+		<operation error="skip">
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$this->language->load('oentrypayment/sagepay_server');
+					if ($this->config->get('sagepay_server_test') == 'live') {
+						$url = 'https://live.sagepay.com/gateway/service/vspserver-register.vsp';
+					} elseif ($this->config->get('sagepay_server_test') == 'test') {
+						$url = 'https://test.sagepay.com/gateway/service/vspserver-register.vsp';
+					} elseif ($this->config->get('sagepay_server_test') == 'sim') {
+						$url = 'https://test.sagepay.com/simulator/VSPServerGateway.asp?Service=VendorRegisterTx';
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$strPost = "VPSProtocol=2.23";
+					$strPost = $strPost . "&TxType=" . $this->config->get('sagepay_server_transaction');
+					$strPost = $strPost . "&Vendor=" . $this->config->get('sagepay_server_vendor');
+					$strPost = $strPost . "&VendorTxCode=" . time() . "id" . $order_id;
+					$strPost = $strPost . "&ReferrerID=" . urlencode("511F950F-AE7F-4E33-93BF-5F607D119275");
+					$strPost = $strPost . "&Amount=" . $this->currency->format($order_info['total'], $order_info['currency_code'], $order_info['currency_value'], false);
+					$strPost = $strPost . "&Currency=" . $order_info['currency_code'];
+					$strPost = $strPost . "&Description=" . urlencode(sprintf($this->language->get('text_description'), date($this->language->get('date_format_short')), $order_id));
+					$strPost = $strPost . "&NotificationURL=" . $this->url->link("payment/sagepay_server/callback", "", "SSL");
+					$strPost = $strPost . "&BillingFirstnames=" . $order_info['payment_firstname'];
+					$strPost = $strPost . "&BillingSurname=" . $order_info['payment_lastname'];
+					$strPost = $strPost . "&BillingAddress1=" . $order_info['payment_address_1'];
+					if (strlen($order_info['payment_address_2']) > 0) {
+						$strPost = $strPost . "&BillingAddress2=" . $order_info['payment_address_2'];
+					}
+					$strPost = $strPost . "&BillingCity=" . $order_info['payment_city'];
+					$strPost = $strPost . "&BillingPostCode=" . $order_info['payment_postcode'];
+					$strPost = $strPost . "&BillingCountry=" . $order_info['payment_iso_code_2'];
+					if ($order_info['payment_iso_code_2'] == 'US') {
+						$strPost = $strPost . "&BillingState=" . $order_info['payment_zone_code'];
+					}
+					if (strlen($order_info['telephone']) > 0) {
+						$strPost = $strPost . "&BillingPhone=" . $order_info['telephone'];
+					}
+					if ($this->cart->hasShipping()) {
+						$strPost = $strPost . "&DeliveryFirstnames=" . $order_info['shipping_firstname'];
+						$strPost = $strPost . "&DeliverySurname=" . $order_info['shipping_lastname'];
+						$strPost = $strPost . "&DeliveryAddress1=" . $order_info['shipping_address_1'];
+						if (strlen($order_info['shipping_address_2']) > 0) {
+							$strPost = $strPost . "&DeliveryAddress2=" . $order_info['shipping_address_2'];
+						}
+						$strPost = $strPost . "&DeliveryCity=" . $order_info['shipping_city'];
+						$strPost = $strPost . "&DeliveryPostCode=" . $order_info['shipping_postcode'];
+						$strPost = $strPost . "&DeliveryCountry=" . $order_info['shipping_iso_code_2'];
+						if ($order_info['shipping_iso_code_2'] == 'US') {
+							$strPost = $strPost . "&DeliveryState=" . $order_info['shipping_zone_code'];
+						}
+						if (strlen($order_info['telephone']) > 0) {
+							$strPost = $strPost . "&DeliveryPhone=" . $order_info['telephone'];
+						}
+					} else {
+						$strPost = $strPost . "&DeliveryFirstnames=" . $order_info['payment_firstname'];
+						$strPost = $strPost . "&DeliverySurname=" . $order_info['payment_lastname'];
+						$strPost = $strPost . "&DeliveryAddress1=" . $order_info['payment_address_1'];
+						if (strlen($order_info['payment_address_2']) > 0) {
+							$strPost = $strPost . "&DeliveryAddress2=" . $order_info['payment_address_2'];
+						}
+						$strPost = $strPost . "&DeliveryCity=" . $order_info['payment_city'];
+						$strPost = $strPost . "&DeliveryPostCode=" . $order_info['payment_postcode'];
+						$strPost = $strPost . "&DeliveryCountry=" . $order_info['payment_iso_code_2'];
+						if ($order_info['payment_iso_code_2'] == 'US') {
+							$strPost = $strPost . "&DeliveryState=" . $order_info['payment_zone_code'];
+						}
+						if (strlen($order_info['telephone']) > 0) {
+							$strPost = $strPost . "&DeliveryPhone=" . $order_info['telephone'];
+						}
+					}
+					$strPost = $strPost . "&CustomerEMail=" . urlencode($order_info['email']);
+					$productsQuery = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_product WHERE order_id='" . (int)$order_id . "'");
+					$currencyRow = $this->db->query("SELECT currency_value FROM `" . DB_PREFIX . "order` WHERE order_id='" . (int)$order_id . "'")->row;
+					$currencyValue = $currencyRow['currency_value'];
+					$cart_rows = 0;
+					$strBasket = "";
+					foreach ($productsQuery->rows as $product) {
+						$strBasket .= 
+							":" .  str_replace(":", " ", $product['name'] . " " . $product['model']) .
+							":" . $product['quantity'] . 
+							":" .  number_format($product['price'] * $currencyValue, 2) . 
+							":" .  number_format($product['tax'] * $currencyValue, 2) . 
+							":" .  number_format(($product['price'] + $product['tax']) * $currencyValue, 2) . 
+							":" .  number_format(($product['price'] + $product['tax']) * $product['quantity'] * $currencyValue, 2);
+						$cart_rows++;
+					}
+					$totalsQuery = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_total WHERE order_id='" . (int)$order_id . "'");
+					foreach ($totalsQuery->rows as $total) {
+						$strBasket .= ":" . str_replace(":", " ", $total['title']) . ":::::" . number_format($total['value'] * $currencyValue, 2);
+						$cart_rows++;
+					}
+					$strBasket = $cart_rows . $strBasket;
+					$strPost=$strPost . "&Basket=" . urlencode($strBasket);
+					$strPost = $strPost . "&AllowGiftAid=0";
+					if (!$this->config->get('sagepay_transaction')) {
+						$strPost = $strPost . "&ApplyAVSCV2=0";
+					}
+					$strPost = $strPost . "&Apply3DSecure=0";
+					$strPost = $strPost . "&Profile=LOW";
+					set_time_limit(60);
+					$output = array();
+					$curlSession = curl_init();
+					curl_setopt($curlSession, CURLOPT_URL, $url);
+					curl_setopt($curlSession, CURLOPT_HEADER, 0);
+					curl_setopt($curlSession, CURLOPT_POST, 1);
+					curl_setopt($curlSession, CURLOPT_POSTFIELDS, $strPost);
+					curl_setopt($curlSession, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($curlSession, CURLOPT_TIMEOUT, 30);
+					curl_setopt($curlSession, CURLOPT_SSL_VERIFYPEER, FALSE);
+					curl_setopt($curlSession, CURLOPT_SSL_VERIFYHOST, 2);
+					$rawresponse = curl_exec($curlSession);
+					$response = mb_split(chr(10), $rawresponse);
+					if (curl_error($curlSession)) {
+						$output['Status'] = "FAIL";
+						$output['StatusDetail'] = curl_error($curlSession);
+					}
+					curl_close($curlSession);
+					for ($i = 0; $i < count($response); $i++) {
+						$splitAt = strpos($response[$i], "=");
+						$output[trim(substr($response[$i], 0, $splitAt))] = trim(substr($response[$i], ($splitAt + 1)));
+					}
+					$arrResponse = $output;
+					$strStatus = $arrResponse['Status'];
+					$strDetail = $arrResponse['StatusDetail'];
+					if (substr($strStatus, 0, 2) == "OK") {
+						$this->db->query("INSERT INTO " . DB_PREFIX . "sagepay SET vpstxid = '" . $this->db->escape($arrResponse['VPSTxId']) . "', sagepay_securitykey = '" . $this->db->escape($arrResponse['SecurityKey']) . "', order_id = '" . (int)$order_id . "'");
+						$success = "success";
+					} else {
+						$success = $arrResponse['StatusDetail'];
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/sagepay_us.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$url = 'https://www.sagepayments.net/cgi-bin/eftbankcard.dll?transaction';
+					$data  = 'm_id=' . $this->config->get('sagepay_us_merchant_id');
+					$data .= '&m_key=' . $this->config->get('sagepay_us_merchant_key');
+					$data .= '&T_amt=' . urlencode($this->currency->format($order_info['total'], $order_info['currency_code'], 1.00000, false));
+					$data .= '&T_ordernum=' . $order_id;
+					$data .= '&C_name=' . urlencode($postdata['cc_owner']);
+					$data .= '&C_address=' . urlencode($order_info['payment_address_1']);
+					$data .= '&C_state=' . urlencode($order_info['payment_zone']);
+					$data .= '&C_city=' . urlencode($order_info['payment_city']);
+					$data .= '&C_cardnumber=' . urlencode($postdata['cc_number']);
+					$data .= '&C_exp=' . urlencode($postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], '2'));
+					$data .= '&C_cvv=' . urlencode($postdata['cc_cvv2']);
+					if (isset($postdata['cc_zip']) && $postdata['cc_zip']) {
+						$c_zip = $postdata['cc_zip'];
+					} else {
+						$c_zip = $order_info['payment_postcode'];
+					}
+					$data .= '&C_zip=' . urlencode($c_zip);
+					$data .= '&C_email=' . urlencode($order_info['email']);
+					$data .= '&T_code=02';
+					$ch = curl_init();
+					curl_setopt($ch, CURLOPT_URL, $url);
+					curl_setopt($ch, CURLOPT_POST, 1);
+					curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					$response = curl_exec($ch);
+					curl_close($ch);
+					$success = "";
+					if ($response[1] == 'A') {
+						$order_status_id = $this->config->get('sagepay_us_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						$message  = 'Approval Indicator: ' . $response[1] . "\n";
+						$message .= 'Approval/Error Code: ' . substr($response, 2, 6) . "\n";
+						$message .= 'Approval/Error Message: ' . substr($response, 8, 32) . "\n";
+						$message .= 'Front-End Indicator: ' . substr($response, 40, 2) . "\n";
+						$message .= 'CVV Indicator: ' . $response[42] . "\n";
+						$message .= 'AVS Indicator: ' . $response[43] . "\n";
+						$message .= 'Risk Indicator: ' . substr($response, 44, 2) . "\n";
+						$message .= 'Reference: ' . substr($response, 46, 10) . "\n";
+						$message .= 'Order Number: ' . substr($response, strpos($response, chr(28)) + 1, strrpos($response, chr(28) - 1)) . "\n";
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						$success = substr($response, 8, 32);
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/stripe.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address, $total = 0) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$version = $this->data['version'] = (!defined('VERSION')) ? 140 : (int)substr(str_replace('.', '', VERSION), 0, 3);
+					$settings = ($version < 151) ? unserialize($this->config->get('stripe_data')) : $this->config->get('stripe_data');
+					$data = array();
+					$data['customer_id'] = $this->session->data['customer_info']['customer_id'];
+					$data['email'] = $this->session->data['customer_info']['email'];
+					if ($settings['checkout_billing']) {
+						$payment_name = $this->session->data['payment_address']['firstname'] . ' ' . $this->session->data['payment_address']['lastname'];
+						$payment_country = $this->session->data['payment_address']['country'];
+						$payment_zone = $this->session->data['payment_address']['zone'];
+						$data['firstname'] = $this->session->data['payment_address']['firstname'];
+						$data['lastname'] = $this->session->data['payment_address']['lastname'];
+						$data['payment_firstname'] = $this->session->data['payment_address']['firstname'];
+						$data['payment_lastname'] = $this->session->data['payment_address']['lastname'];
+						$data['payment_company'] = '';
+						$data['payment_company_id'] = '';
+						$data['payment_tax_id'] = '';
+						$data['payment_address_1'] = $this->session->data['payment_address']['address_1'];
+						$data['payment_address_2'] = '';
+						$data['payment_city'] = $this->session->data['payment_address']['city'];
+						$data['payment_postcode'] = $this->session->data['payment_address']['postcode'];
+						$data['payment_zone'] = $this->session->data['payment_address']['zone'];
+						$data['payment_zone_id'] = $this->session->data['payment_address']['zone_id'];
+						$data['payment_country'] = $this->session->data['payment_address']['country'];
+						$data['payment_country_id'] = $this->session->data['payment_address']['country_id'];
+					}
+					if ($settings['checkout_shipping']) {
+						if (isset($this->session->data['country_id'])) {
+							$shipping_quote = array(
+								'country_id'	=> $this->session->data['country_id'],
+								'zone_id'		=> $this->session->data['zone_id'],
+								'postcode'		=> $this->session->data['postcode'],
+							);
+						} elseif (isset($this->session->data['guest']['shipping']['country_id'])) {
+							$shipping_quote = array(
+								'country_id'	=> $this->session->data['guest']['shipping']['country_id'],
+								'zone_id'		=> $this->session->data['guest']['shipping']['zone_id'],
+								'postcode'		=> $this->session->data['guest']['shipping']['postcode'],
+							);
+						} else {
+							$shipping_quote = array(
+								'country_id'	=> $this->session->data['shipping_country_id'],
+								'zone_id'		=> $this->session->data['shipping_zone_id'],
+								'postcode'		=> $this->session->data['shipping_postcode'],
+							);
+						}
+						$data['shipping_firstname'] = $this->session->data['shipping_address']['firstname'];
+						$data['shipping_lastname'] = $this->session->data['shipping_address']['lastname'];
+						$data['shipping_company'] = '';
+						$data['shipping_company_id'] = '';
+						$data['shipping_tax_id'] = '';
+						$data['shipping_address_1'] = $this->session->data['shipping_address']['address_1'];
+						$data['shipping_address_2'] = '';
+						$data['shipping_city'] = $this->session->data['shipping_address']['city'];
+						$data['shipping_postcode'] = $this->session->data['shipping_address']['postcode'];
+						$data['shipping_zone'] = $this->session->data['shipping_address']['zone'];
+						$data['shipping_zone_id'] = $this->session->data['shipping_address']['zone_id'];
+						$data['shipping_country'] = $this->session->data['shipping_address']['country'];
+						$data['shipping_country_id'] = $this->session->data['shipping_address']['country_id'];
+					}
+					$data = (!empty($this->request->post['card_token'])) ? array('card' => $this->request->post['card_token']) : array();
+					if (isset($this->session->data['store_id'])) {
+						$store_name = $this->session->data['store_config']['config_name'];
+					} else {
+						$store_name = $this->config->get('config_name');
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					$order_status_id = $settings['success_status_id'];
+					if ($order_info['total'] > 0) {
+						$data['amount'] = round(100 * $this->currency->convert($order_info['total'], $this->config->get('config_currency'), $settings['currencies'][$this->session->data['currency']]));
+						$data['capture'] = ($settings['charge_mode'] == 'authorize') ? 'false' : 'true';
+						$data['currency'] = $settings['currencies'][$order_info['currency_code']];
+						$data['description'] = $this->replaceShortcodes($settings['transaction_description'], $order_info);
+						$data['metadata']['Store'] = $store_name;
+						$data['metadata']['Order ID'] = $order_info['order_id'];
+						$data['metadata']['Customer Info'] = $order_info['firstname'] . ' ' . $order_info['lastname'] . ', ' . $order_info['email'] . ', ' . $order_info['telephone'] . ', customer_id: ' . $order_info['customer_id'];
+						$data['metadata']['Products'] = $this->replaceShortcodes('[products]', $order_info);
+						if (!empty($order_info['shipping_method'])) {
+							$data['metadata']['Shipping Method'] = $order_info['shipping_method'] . ' (' . $this->currency->format($this->session->data['shipping_method']['cost']) . ')';
+							$data['metadata']['Shipping Address'] = $order_info['shipping_firstname'] . ' ' . $order_info['shipping_lastname'] . ($order_info['shipping_company'] ? ', ' . $order_info['shipping_company'] : '');
+							$data['metadata']['Shipping Address'] .= ', ' . $order_info['shipping_address_1'] . ($order_info['shipping_address_2'] ? ', ' . $order_info['shipping_address_2'] : '');
+							$data['metadata']['Shipping Address'] .= ', ' . $order_info['shipping_city'] . ', ' . $order_info['shipping_zone'] . ', ' . $order_info['shipping_postcode'] . ', ' . $order_info['shipping_country'];
+						}
+						$data['metadata']['Order Comment'] = $order_info['comment'];
+						$data['metadata']['IP Address'] = $order_info['ip'];
+						foreach ($data['metadata'] as &$metadata) {
+							if (strlen($metadata) > 197) {
+								$metadata = substr($metadata, 0, 197) . '...';
+							}
+						}
+						$charge_response = $this->curlRequest('charges', $data, 'POST');
+						if (empty($charge_response['error'])) {
+							if ($charge_response['card']['address_line1_check'] == 'fail' && $settings['street_status_id'])	$order_status_id = $settings['street_status_id'];
+							if ($charge_response['card']['address_zip_check'] == 'fail' && $settings['zip_status_id'])		$order_status_id = $settings['zip_status_id'];
+							if ($charge_response['card']['cvc_check'] == 'fail' && $settings['cvc_status_id'])				$order_status_id = $settings['cvc_status_id'];
+						} else {
+							$this->response->setOutput(json_encode(array('error' => $charge_response['error']['message'])));
+							return;
+						}
+					}
+					$this->model_checkout_order->confirm($order_id, $order_status_id);
+					$strong = '<strong style="display: inline-block; width: 120px; padding: 2px 5px">';
+					$comment = '';
+					if (!empty($plan['name'])) {
+						$comment .= $strong . 'Subscribed to Plan:</strong>' . $plan['name'] . '<br />';
+						$comment .= $strong . 'Subscription Charge:</strong>' . $this->currency->format($plan['cost']) . '<br />';
+					}
+					if (!empty($charge_response)) {
+						$comment .= '<script type="text/javascript" src="view/javascript/stripe.js"></script>';
+						$comment .= $strong . 'Stripe Charge ID:</strong>' . $charge_response['id'] . '<br />';
+						$comment .= $strong . 'Charge Amount:</strong>' . $this->currency->format($charge_response['amount'] / 100) . '<br />';
+						$comment .= $strong . 'Captured:</strong>' . (!empty($charge_response['captured']) ? 'Yes' : '<span>No &nbsp;</span> <a onclick="capture($(this), \'' . $charge_response['id'] . '\')">(Capture)</a>') . '<br />';
+						$comment .= $strong . 'Card Name:</strong>' . $charge_response['card']['name'] . '<br />';
+						$comment .= $strong . 'Card Number:</strong>**** **** **** ' . $charge_response['card']['last4'] . '<br />';
+						$comment .= $strong . 'Card Fingerprint:</strong>' . $charge_response['card']['fingerprint'] . '<br />';
+						$comment .= $strong . 'Card Expiry:</strong>' . $charge_response['card']['exp_month'] . ' / ' . $charge_response['card']['exp_year'] . '<br />';
+						$comment .= $strong . 'Card Type:</strong>' . $charge_response['card']['type'] . '<br />';
+						$comment .= $strong . 'Card Address:</strong>' . $charge_response['card']['address_line1'] . '<br />';
+						$comment .= (!empty($charge_response['card']['address_line2'])) ? $strong . '&nbsp;</strong>' . $charge_response['card']['address_line2'] . '<br />' : '';
+						$comment .= $strong . '&nbsp;</strong>' . $charge_response['card']['address_city'] . ', ' . $charge_response['card']['address_state'] . ' ' . $charge_response['card']['address_zip'] . '<br />';
+						$comment .= $strong . '&nbsp;</strong>' . $charge_response['card']['address_country'] . '<br />';
+						$comment .= $strong . 'Origin:</strong>' . $charge_response['card']['country'] . ' <img src="view/image/flags/' . strtolower($charge_response['card']['country']) . '.png" /><br />';
+						$comment .= $strong . 'CVC Check:</strong>' . $charge_response['card']['cvc_check'] . '<br />';
+						$comment .= $strong . 'Street Check:</strong>' . $charge_response['card']['address_line1_check'] . '<br />';
+						$comment .= $strong . 'Zip Check:</strong>' . $charge_response['card']['address_zip_check'] . '<br />';
+						$comment .= $strong . 'Refund:</strong><a onclick="refund($(this), ' . $charge_response['amount'] . ', \'' . $charge_response['id'] . '\', ' . (version_compare(VERSION, '1.5.0') < 0 ? 0 : 1) . ')">(Refund)</a>';
+					}
+					$this->model_checkout_order->update($order_id, $order_status_id, $comment, false);
+					$this->response->setOutput(json_encode(array('success' => $this->makeURL('checkout/success', '', 'SSL'))));
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="catalog/model/payment/usaepay_server.php" error="skip">
+		<operation>
+			<search position="before"><![CDATA[
+				public function getMethod($address) {
+			]]></search>
+			<add><![CDATA[
+				public function send($postdata, $comment, $notify) {
+					$classname = "usaepay_server";
+					if (isset($this->session->data['customer_info'])) {
+						$this->load->language('oentrypayment/' . $classname);
+					} else {
+						$this->load->language('payment/' . $classname);
+					}
+					if (isset($this->session->data['store_id'])) {
+						$store_name = $this->session->data['store_config']['config_name'];
+					} else {
+						$store_name = $this->config->get('config_name');
+					}
+					if (isset($this->session->data['order_id'])) {
+						$order_id = $this->session->data['order_id'];
+					} else {
+						$order_id = $this->session->data['edit_order'];
+					}
+					if (isset($this->session->data['edit_order'])) {
+						$order_info = $this->model_sale_order->getOrder($order_id);
+					} else {
+						$order_info = $this->model_checkout_order->getOrder($order_id);
+					}
+					if (isset($order_info['currency_code'])) { $order_info['currency'] = $order_info['currency_code']; }
+					if (isset($order_info['currency_value'])) { $order_info['value'] = $order_info['currency_value']; }
+					$amount = str_replace(array(','), '', $this->currency->format($order_info['total'], $order_info['currency'], FALSE, FALSE));
+					$currencies = array(
+						'USD' => 'USD',
+					);
+					require(DIR_SYSTEM . '../catalog/controller/payment/usaepay.php');
+					$tran					= new umTransaction;
+					$tran->key				= trim($this->config->get($classname . '_key'));	
+					$tran->card 			= trim(str_replace('-', '', $postdata['cc_number']));
+					$tran->exp 				= ($postdata['cc_expire_date_month'] . substr($postdata['cc_expire_date_year'], 2));			
+					$tran->amount 			= $amount;			
+					$tran->invoice			= $order_info['order_id'];   		
+					$tran->cardholder 		= trim($order_info['payment_firstname'] . ' ' . $order_info['payment_lastname']); 	
+					$tran->street 			= trim($order_info['payment_address_1'] . ' ' . $order_info['payment_address_2']);
+					$tran->zip 				= $order_info['payment_postcode'];	;			
+					$tran->description		= ($store_name . ' #' . $order_info['order_id']);	
+					$tran->cvv2				= $postdata['cc_cvv2'];
+					$tran->ip				= $order_info['ip'];
+					$tran->command			= $this->config->get($classname . '_txntype') ? $this->config->get($classname . '_txntype') : 'sale';
+					$tran->ignoresslcerterrors=true;
+					if ($this->config->get($classname . '_server') == 0) {
+						$tran->usesandbox 	= true;
+					}
+					if ($this->config->get($classname . '_test')) {
+						$tran->testmode 	= 1;
+					}
+					if ($this->config->get($classname . '_pin')) {
+						$tran->pin 			= trim($this->config->get($classname . '_pin'));
+					}
+					$success = "";
+					$message = "";
+					$result = $tran->Process();
+					if ($this->config->get($classname . '_debug')) { file_put_contents(DIR_LOGS . $classname . '_debug.txt', "Request: " . print_r($tran,1) . "\r\n----------------\r\n"); }
+					if ($result) {
+						$order_status_id = $this->config->get($classname . '_order_status_id');
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->confirm($order_id, $order_status_id, $comment, $notify);
+						}
+						if (!isset($this->session->data['edit_order'])) {
+							$this->model_checkout_order->update($order_id, $order_status_id, $message, false);
+						} else {
+							$this->session->data['payment_message'] = $message;
+						}
+						$success = "success";
+					} else {
+						$success = $tran->result . ' :: ' . $tran->error;
+						if (isset($tran->curlerror)) {
+							$success .= ' -- ' . $tran->curlerror;
+						}
+					}
+					return $success;
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search position="replace"><![CDATA[
+				$name = basename(__FILE__, '.php');
+			]]></search>
+			<add><![CDATA[
+				$name = "usaepay_server";
+			]]></add>
+		</operation>
+		<operation>
+			<search position="replace"><![CDATA[
+				$this->load->language('payment/' . $name);
+			]]></search>
+			<add><![CDATA[
+				if (isset($this->session->data['customer_info'])) {
+					$this->load->language('oentrypayment/' . $name);
+				} else {
+					$this->load->language('payment/' . $name);
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+</modification>

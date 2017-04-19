@@ -1,0 +1,68 @@
+<modification>
+	<id>Order Entry - Change Default Edit Link</id>
+	<version>2.3.4</version>
+	<vqmver>2.x</vqmver>
+	<author>ACFD Development</author>
+	
+	<file name="admin/controller/common/home.php">
+		<operation error="skip">
+			<search position="replace"><![CDATA[
+				str_replace("info&","insert&",$action['href'])
+			]]></search>
+			<add><![CDATA[
+				str_replace("sale/order/info","sale/order_entry&type=default_edit",$action['href'])
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="admin/controller/sale/customer.php">
+		<operation>
+			<search position="after"><![CDATA[
+				$this->data['button_add_address'] = $this->language->get('button_add_address');
+			]]></search>
+			<add><![CDATA[
+				if (isset($this->request->get['customer_id'])) {
+					$this->data['button_create_order'] = $this->language->get('button_create_order');
+					$this->data['create_order'] = $this->url->link('sale/order_entry', 'token=' . $this->session->data['token'] . '&customer_id=' . $this->request->get['customer_id'], 'SSL');
+				}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/sale/order.php">
+		<operation error="skip">
+			<search position="replace"><![CDATA[
+				'href' => $this->url->link('sale/order/update', 'token=' . $this->session->data['token'] . '&order_id=' . $result['order_id'] . $url, 'SSL')
+			]]></search>
+			<add><![CDATA[
+				'href' => $this->url->link('sale/order_entry', 'token=' . $this->session->data['token'] . '&order_id=' . $result['order_id'] . '&type=default_edit', 'SSL')
+			]]></add>
+		</operation>
+	</file>
+	
+	<file name="admin/language/*/sale/customer.php">
+		<operation>
+			<search position="after"><![CDATA[
+				// Text
+			]]></search>
+			<add><![CDATA[
+				$_['button_create_order']		= 'Create Order';
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/view/template/sale/customer_form.tpl">
+		<operation>
+			<search position="replace"><![CDATA[
+				<a onclick="$('#form').submit();" class="button">
+			]]></search>
+			<add><![CDATA[
+				<?php if (isset($button_create_order)) { ?>
+					<a href="<?php echo $create_order; ?>" class="button"><?php echo $button_create_order; ?></a>
+				<?php } ?>
+				<a onclick="$('#form').submit();" class="button">
+			]]></add>
+		</operation>
+	</file>
+
+</modification>

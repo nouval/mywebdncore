@@ -1,0 +1,2 @@
+commit_dialog_history_messages=<?xml version\="1.0" encoding\="UTF-8"?>\n<messages>\n<message>doc and others</message>\n<message>Implement unit test, doc etc.</message>\n<message>Update to support pdf as image (png)</message>\n<message>New and updated code to support pdf as image (png)</message>\n<message>remove target/</message>\n<message>ignore target/ folder</message>\n</messages>
+eclipse.preferences.version=1

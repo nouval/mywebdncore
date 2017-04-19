@@ -1,0 +1,25 @@
+    <div class="col-sm-8" id="list-contacts">
+        <h3>Contacts</h3>            
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="contact in contacts">
+                <td>{{contact.user.name.first}}</td>
+                <td>{{contact.user.name.last}}</td>
+                <td>{{contact.user.email}}</td>
+                <td>
+                    <a href="#/contact/{{contact.user.registered}}"><span class="glyphicon glyphicon-edit"></span></a>
+                    <a href="" ng-click="delete({{contact.user.registered}})"><span class="glyphicon glyphicon-trash"></span></a>
+                </td>
+            </tr>
+
+            </tbody>
+        </table>      
+    </div>

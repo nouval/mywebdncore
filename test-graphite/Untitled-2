@@ -1,0 +1,16 @@
+/Classic/Pages/Common/CustomerDetail/IdentificationsOCR.aspx?&callback_method=CES.OCRCustomerController.modalBoxCallBack&
+/Classic/Pages/Common/CustomerDetail/IdentificationsOCR.aspx?&callback_method=CES.OCRCustomerController.modalBoxCallBack&
+
+
+Referring Page: /Classic/Pages/Common/CustomerDetail/IdentificationsOCR.aspx?&callback_method=CES.OCRCustomerController.modalBoxCallBack&
+Optional Message: https://fxonlinepilot.riaenvia.net/Classic/api/GetImage?ImageKey=f6f2e3b8-6eda-464b-85b2-e76cfeb71915
+
+Referring Page: /Classic/Pages/Common/CustomerDetail/IdentificationsOCR.aspx?&callback_method=CES.OCRCustomerController.modalBoxCallBack&
+Optional Message: https://fxonline.riaenvia.net/Classic/api/GetImage?ImageKey=37586c15-73ce-4cb2-93ec-a3da1fe7e3b2
+
+
+
+"Server cannot set status after HTTP headers have been sent."
+
+
+C:\Users\nhussein\Source\Repos\FxOnline\Web\Classic\FxOnline\js\Pages\MoneyTransfer\Receiving\OrderEntry\OrderCreate.aspx.js

@@ -1,0 +1,45 @@
+
+
+
+
+
+ConnectionString = "Data Source=10.30.108.12;Initial Catalog=fxDB6_Logs;Persist Security Info=True;User ID=appUser_fxOnline1;Password=Onl!nAppD3v12"
+
+ConnectionString = "Data Source=10.30.108.12;Initial Catalog=fxDB6_Logs;Persist Security Info=True;User ID=appUser_fxOnline1;Password=Onl!nAppD3v12"
+
+sp_tracker_event_insert
+
+
+http://10.30.108.24/ReportServer?/MT_Receipts/MTReceipt_US_CA_Ver1.0&rs:Command=Render&rs:Format=PDF&ServiceID=111&OrderId=1107095552&TemplateID=34&ReceivingAgentCountry=US&ReceivingAgentState=CA&CompanyID=4&Language1=en-US&Language2=es&DeliveryMethod=1&LanguageID=2&DiscLanguageID=2&CultureCode=en-US&Watermark=&DBID=101&TransTablename=oltblorderstopost&IsReprint=False&ProductID=0&ProductItemID=0&RecAgentID=11311&RecAgentLocID=17746951&PayingAgentCountry=ID&PayingAgentState=JK&PayAgentID=659112&PayAgentLocID=13857911&RequestedByUserId=18638711&RequestedByAgentId=11311&RequestedByAgentLocId=17746951&DocumentType=10
+
+http://10.30.108.24/ReportServer?/MT_Receipts/MTReceipt_US_CA_Ver1.0&rs:Command=Render&rs:Format=PDF&ServiceID=111&OrderId=1107095550&TemplateID=34&ReceivingAgentCountry=US&ReceivingAgentState=CA&CompanyID=4&Language1=en-US&Language2=es&DeliveryMethod=1&LanguageID=2&DiscLanguageID=2&CultureCode=en-US&Watermark=&DBID=101&TransTablename=oltblorderstopost&IsReprint=False&ProductID=0&ProductItemID=0&RecAgentID=11311&RecAgentLocID=17746951&PayingAgentCountry=ID&PayingAgentState=JK&PayAgentID=659112&PayAgentLocID=13857911&RequestedByUserId=18638711&RequestedByAgentId=11311&RequestedByAgentLocId=17746951&DocumentType=10
+
+request.SsrsUser = "mtSSRSAdmin"
+request.SsrsUserPassword = "ssrs#Dev1"
+request.SsrsUserDomain = "DEVLAB2"
+
+DEVLAB2\mtSSRSAdmin
+
+
+1 800 866 4010 #3 - 
+
+
+https://sts.riadev.local/adfs/ls/wia?wtrealm=https%3a%2f%2flocalhost%3a44378%2f&wctx=WsFedOwinState%3dLIeaEOMXU3UKz_sU-Kk3y3gKRCRex45yypWRwabBI41TKejAdMtNg_OjW9zDNnaExApXMhC99B28F7iiE55Zwc6aAAw6ojbjs_M7G-9TQxEK-cghuXMz9gsgg7amzS6d&wa=wsignin1.0
+
+
+
+   Request URL: http://fxonline/Classic/HttpHandlers/CustomerPreDisclosureHandler.ashx?orderId=968152&isNew=true&dbId=101
+
+   Request URL: http://fxonline/Classic/HttpHandlers/CustomerPreDisclosureHandler.ashx?orderId=968152&isNew=true&dbId=101   
+
+   http://10.30.108.24/ReportServer?/MT_Receipts/MTReceipt_US_Disclosure_Ver1.0&rs:Command=Render&rs:Format=PDF&ServiceID=111&OrderId=968153&TemplateID=36&Language1=en-US&Language2=es&LanguageID=2&CultureCode=en-US&DBID=101&TransTablename=mttblpreorders&ReceivingAgentCountry=US&ReceivingAgentState=CA&Watermark=&RecAgentID=11311&RecAgentLocID=17746951&PayingAgentCountry=ID&PayingAgentState=JK&PayAgentID=659112&PayAgentLocID=13857911&DeliveryMethod=1&DiscLanguageID=2
+
+
+   Name	Protocol	Method	Result	Content type	Received	Time	Initiator
+http://fxonline/Classic/api/Order/SavePreOrderAuditRecord	HTTP	POST	500	application/json	5.06 KB	15.57 ms	XMLHttpRequest
+
+
+scenarios:
+- connection to redis being severed
+- expired content
+- other exceptions!

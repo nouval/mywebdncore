@@ -1,0 +1,62 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v1.0",
+    "signature": "a79eb16c9456ed4a96d54eb9482697cabb6812e7"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v1.0": {
+      "app/1.0.0": {
+        "dependencies": {
+          "library": "1.0.0"
+        },
+        "runtime": {
+          "app.dll": {}
+        }
+      },
+      "Newtonsoft.Json/9.0.1-beta1": {
+        "dependencies": {
+          "System.Runtime.Serialization.Primitives": "4.1.1-rc2-24027"
+        },
+        "runtime": {
+          "lib/netstandard1.0/Newtonsoft.Json.dll": {}
+        }
+      },
+      "System.Runtime.Serialization.Primitives/4.1.1-rc2-24027": {
+        "runtime": {
+          "lib/netstandard1.3/System.Runtime.Serialization.Primitives.dll": {}
+        }
+      },
+      "library/1.0.0": {
+        "dependencies": {
+          "Newtonsoft.Json": "9.0.1-beta1"
+        },
+        "runtime": {
+          "library.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "app/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Newtonsoft.Json/9.0.1-beta1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-eGdISZNV16lWnDPHjfgBVcoyihASk/zsoXLN3r2uZYnXisiTUWKF8Xmgza3EtEFOMbYTmjUqBEjjT7Lx7ilK/w=="
+    },
+    "System.Runtime.Serialization.Primitives/4.1.1-rc2-24027": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CatEVkKtMZlBrsdboi2RNediIXkYaiKtseORboHASI96mYtlPvivmHr/nw+pKx7s7enaFvs5Ovfbc8uXs5Qt7Q=="
+    },
+    "library/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

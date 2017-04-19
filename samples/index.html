@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Example - example-ngChange-directive-production</title>
+  
+
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+  
+
+  
+</head>
+<body ng-app="changeExample">
+  <script>
+  angular.module('changeExample', [])
+    .controller('ExampleController', ['$scope', function($scope) {
+      $scope.files = null;
+      $scope.uploadImageFile = function() {
+          document.getElementById("imageUploadFilename").click();
+      };
+      $scope.fileNameChanged = function(element) {
+            $scope.files = [];
+            for (var i = 0; i < element.files.length; i++) {
+                $scope.files.push(element.files[i])
+            }
+            // we use .$digest, to force angular to update any binded data
+            // alternatively you can use .$apply, which will do both! 
+            $scope.$digest();
+      }
+      $scope.reset = function() {
+          $scope.files = null;
+      }
+    }]);
+</script>
+<div ng-controller="ExampleController">
+    
+    <div>
+        <span ng-click="uploadImageFile()">Upload image file</span>
+        <input type="file" id="imageUploadFilename" name="filename" onchange="angular.element(this).scope().fileNameChanged(this)" ng-hide="true"/>
+        <form method="post" action="" ng-show="files.length" enctype="multipart/form-data">
+            <span>are you sure to upload <b>{{files[0].name}}</b>?</span>
+            <button type="button" ng-click="reset()">cancel</button>
+            <button type="submit">confirm</button>
+        </form>
+    </div>
+  
+  <!--  
+  <input type="checkbox" ng-model="confirmed" ng-change="change()" id="ng-change-example1" />
+  <input type="checkbox" ng-model="confirmed" id="ng-change-example2" />
+  <input type="text" ng-model="fname" ng-change="fnameChanged(fname)" id="ng-text-change-example" />
+  <label for="ng-change-example2">Confirmed</label><br />
+  <tt>debug = {{confirmed}}</tt><br/>
+  <tt>counter = {{counter}}</tt><br/>
+  <tt ng-show="files.length">fname = {{fname}}</tt><br/>
+  -->
+</div>
+</body>
+</html>
+
+<!-- 
+Copyright 2016 Google Inc. All Rights Reserved.
+Use of this source code is governed by an MIT-style license that
+can be found in the LICENSE file at http://angular.io/license
+-->
